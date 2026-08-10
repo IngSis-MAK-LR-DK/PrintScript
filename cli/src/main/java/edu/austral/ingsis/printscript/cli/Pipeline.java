@@ -2,8 +2,8 @@ package edu.austral.ingsis.printscript.cli;
 
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.ast.Statement;
-import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
-import edu.austral.ingsis.printscript.parser.PrintScriptParser;
+import edu.austral.ingsis.printscript.lexer.Lexer;
+import edu.austral.ingsis.printscript.parser.Parser;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -14,18 +14,21 @@ import java.util.Iterator;
 /** Wires source file -> lexer -> parser, reporting progress on the console as it goes. */
 final class Pipeline {
 
-    private static final PrintScriptLexer LEXER = new PrintScriptLexer();
-    private static final PrintScriptParser PARSER = new PrintScriptParser();
+    private final Lexer lexer;
+    private final Parser parser;
 
-    private Pipeline() {}
+    Pipeline(Lexer lexer, Parser parser) {
+        this.lexer = lexer;
+        this.parser = parser;
+    }
 
-    static Iterator<Statement> parse(Path sourceFile) throws IOException {
+    Iterator<Statement> parse(Path sourceFile) throws IOException {
         long totalChars = Files.size(sourceFile);
         Reader fileReader = Files.newBufferedReader(sourceFile, StandardCharsets.UTF_8);
         CountingReader countingReader = new CountingReader(fileReader);
 
-        Iterator<Token> tokens = LEXER.tokenize(countingReader);
-        Iterator<Statement> statements = PARSER.parse(tokens);
+        Iterator<Token> tokens = lexer.tokenize(countingReader);
+        Iterator<Statement> statements = parser.parse(tokens);
 
         ProgressReporter reporter = new ProgressReporter(countingReader, totalChars);
         return new ProgressReportingIterator(statements, reporter);

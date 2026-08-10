@@ -9,61 +9,65 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
-final class RuleChecker implements StatementVisitor<Void> {
+/**
+ * Checks a single statement against the configured rules and reports the findings it produces.
+ *
+ * <p>Every method here is pure: given the same statement and the same (immutable) {@link
+ * AnalyzerConfig}, it always returns the same list and never mutates shared state. The caller
+ * ({@link PrintScriptAnalyzer}) is the only place where results get accumulated.
+ */
+final class RuleChecker implements StatementVisitor<List<AnalysisFinding>> {
 
     private static final Pattern CAMEL_CASE = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
     private static final Pattern SNAKE_CASE = Pattern.compile("^[a-z][a-z0-9_]*$");
 
     private final AnalyzerConfig config;
-    private final List<AnalysisFinding> findings = new ArrayList<>();
 
     RuleChecker(AnalyzerConfig config) {
         this.config = config;
     }
 
-    List<AnalysisFinding> findings() {
-        return findings;
+    @Override
+    public List<AnalysisFinding> visitVariableDeclaration(VariableDeclarationStatement statement) {
+        return checkIdentifierCase(statement.identifierName(), statement.start(), statement.end())
+                .map(List::of)
+                .orElseGet(List::of);
     }
 
     @Override
-    public Void visitVariableDeclaration(VariableDeclarationStatement statement) {
-        checkIdentifierCase(statement.identifierName(), statement.start(), statement.end());
-        return null;
+    public List<AnalysisFinding> visitAssignment(AssignmentStatement statement) {
+        return List.of();
     }
 
     @Override
-    public Void visitAssignment(AssignmentStatement statement) {
-        return null;
-    }
-
-    @Override
-    public Void visitPrintln(PrintlnStatement statement) {
+    public List<AnalysisFinding> visitPrintln(PrintlnStatement statement) {
         if (config.printlnArgumentMustBeIdentifierOrLiteral() && !isIdentifierOrLiteral(statement.argument())) {
-            findings.add(
+            return List.of(
                     new AnalysisFinding(
                             "'println' must be called with an identifier or a literal, not an expression",
                             statement.argument().start(),
                             statement.argument().end()));
         }
-        return null;
+        return List.of();
     }
 
-    private void checkIdentifierCase(String name, Position start, Position end) {
+    private Optional<AnalysisFinding> checkIdentifierCase(String name, Position start, Position end) {
         if (!config.identifierCaseCheckEnabled()) {
-            return;
+            return Optional.empty();
         }
         Pattern pattern = config.identifierCase() == IdentifierCase.CAMEL_CASE ? CAMEL_CASE : SNAKE_CASE;
-        if (!pattern.matcher(name).matches()) {
-            findings.add(
-                    new AnalysisFinding(
-                            "Identifier '" + name + "' does not follow " + config.identifierCase() + " naming convention",
-                            start,
-                            end));
+        if (pattern.matcher(name).matches()) {
+            return Optional.empty();
         }
+        return Optional.of(
+                new AnalysisFinding(
+                        "Identifier '" + name + "' does not follow " + config.identifierCase() + " naming convention",
+                        start,
+                        end));
     }
 
     private static boolean isIdentifierOrLiteral(Expression expression) {

@@ -1,0 +1,120 @@
+@startuml PrintScript-Herencia
+
+package "common" {
+  package "common.ast" {
+    interface ASTNode
+    interface Statement
+    interface Expression
+    interface StatementVisitor<R>
+    interface ExpressionVisitor<R>
+
+    ASTNode <|-- Statement
+    ASTNode <|-- Expression
+
+    Statement <|.. VariableDeclarationStatement
+    Statement <|.. AssignmentStatement
+    Statement <|.. PrintlnStatement
+
+    Expression <|.. NumberLiteralExpression
+    Expression <|.. StringLiteralExpression
+    Expression <|.. IdentifierExpression
+    Expression <|.. BinaryExpression
+  }
+
+  abstract class PrintScriptException
+  PrintScriptException <|-- LexicalException
+  PrintScriptException <|-- SyntaxException
+  PrintScriptException <|-- SemanticException
+
+  interface "ConfigLoader<T>" as ConfigLoader
+}
+
+package "lexer" {
+  interface Lexer
+  class PrintScriptLexer
+  class TokenIterator
+  Lexer <|.. PrintScriptLexer
+  PrintScriptLexer ..> TokenIterator : crea
+}
+
+package "parser" {
+  interface Parser
+  class PrintScriptParser
+  class StatementIterator
+  Parser <|.. PrintScriptParser
+  PrintScriptParser ..> StatementIterator : crea
+  StatementIterator ..> Lexer : consume Iterator<Token>
+}
+
+package "interpreter" {
+  interface Interpreter
+  class PrintScriptInterpreter
+  class Environment
+  class ExpressionEvaluator
+  class StatementExecutor
+  Interpreter <|.. PrintScriptInterpreter
+  StatementExecutor ..|> StatementVisitor
+  ExpressionEvaluator ..|> ExpressionVisitor
+  PrintScriptInterpreter --> Environment
+  PrintScriptInterpreter --> StatementExecutor
+  StatementExecutor --> ExpressionEvaluator
+  ExpressionEvaluator --> Environment
+}
+
+package "formatter" {
+  interface Formatter
+  class PrintScriptFormatter
+  class StatementFormatter
+  class ExpressionFormatter
+  class FormatterConfigLoader
+  Formatter <|.. PrintScriptFormatter
+  ConfigLoader <|.. FormatterConfigLoader
+  StatementFormatter ..|> StatementVisitor
+  ExpressionFormatter ..|> ExpressionVisitor
+  PrintScriptFormatter --> StatementFormatter
+  StatementFormatter --> ExpressionFormatter
+}
+
+package "analyzer" {
+  interface Analyzer
+  class PrintScriptAnalyzer
+  class RuleChecker
+  class AnalyzerConfigLoader
+  Analyzer <|.. PrintScriptAnalyzer
+  ConfigLoader <|.. AnalyzerConfigLoader
+  RuleChecker ..|> StatementVisitor
+  PrintScriptAnalyzer --> RuleChecker
+}
+
+package "cli" {
+  interface Command
+  class Main
+  class Pipeline
+  class ValidationCommand
+  class ExecutionCommand
+  class FormattingCommand
+  class AnalyzingCommand
+
+  Command <|.. ValidationCommand
+  Command <|.. ExecutionCommand
+  Command <|.. FormattingCommand
+  Command <|.. AnalyzingCommand
+
+  Main ..> Command : crea e invoca
+  Main ..> Lexer : new PrintScriptLexer()
+  Main ..> Parser : new PrintScriptParser()
+  ValidationCommand --> Pipeline
+  ValidationCommand --> Interpreter
+  ExecutionCommand --> Pipeline
+  ExecutionCommand --> Interpreter
+  FormattingCommand --> Pipeline
+  FormattingCommand --> Formatter
+  FormattingCommand --> ConfigLoader
+  AnalyzingCommand --> Pipeline
+  AnalyzingCommand --> Analyzer
+  AnalyzingCommand --> ConfigLoader
+  Pipeline --> Lexer
+  Pipeline --> Parser
+}
+
+@enduml

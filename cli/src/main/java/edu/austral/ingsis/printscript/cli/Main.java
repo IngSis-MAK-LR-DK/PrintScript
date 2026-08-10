@@ -1,32 +1,31 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.analyzer.AnalysisFinding;
-import edu.austral.ingsis.printscript.analyzer.AnalyzerConfig;
 import edu.austral.ingsis.printscript.analyzer.AnalyzerConfigLoader;
 import edu.austral.ingsis.printscript.analyzer.PrintScriptAnalyzer;
 import edu.austral.ingsis.printscript.common.PrintScriptException;
-import edu.austral.ingsis.printscript.common.ast.Statement;
-import edu.austral.ingsis.printscript.formatter.FormatterConfig;
 import edu.austral.ingsis.printscript.formatter.FormatterConfigLoader;
 import edu.austral.ingsis.printscript.formatter.PrintScriptFormatter;
 import edu.austral.ingsis.printscript.interpreter.PrintScriptInterpreter;
+import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
+import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
 
+/**
+ * CLI entry point and composition root: this is the only place where concrete implementations of
+ * {@code Lexer}, {@code Parser}, {@code Interpreter}, {@code Formatter} and {@code Analyzer} get
+ * instantiated. Everything downstream ({@link Pipeline}, the {@link Command} implementations)
+ * only ever sees their interfaces.
+ */
 public final class Main {
 
     public static void main(String[] args) {
         try {
             CliArguments arguments = CliArguments.parse(args);
-            run(arguments);
+            Command command = commandFor(arguments);
+            int exitCode = command.run(arguments);
+            if (exitCode != 0) {
+                System.exit(exitCode);
+            }
         } catch (CliUsageException e) {
             System.err.println(e.getMessage());
             System.exit(2);
@@ -39,65 +38,15 @@ public final class Main {
         }
     }
 
-    private static void run(CliArguments arguments) throws IOException {
-        switch (arguments.operation()) {
-            case VALIDATION -> validate(arguments.sourceFile());
-            case EXECUTION -> execute(arguments.sourceFile());
-            case FORMATTING -> format(arguments.sourceFile(), arguments.configFile());
-            case ANALYZING -> analyze(arguments.sourceFile(), arguments.configFile());
-        }
-    }
+    private static Command commandFor(CliArguments arguments) {
+        Pipeline pipeline = new Pipeline(new PrintScriptLexer(), new PrintScriptParser());
 
-    private static void validate(Path sourceFile) throws IOException {
-        Iterator<Statement> statements = Pipeline.parse(sourceFile);
-        PrintStream discard = new PrintStream(OutputStream.nullOutputStream());
-        new PrintScriptInterpreter().interpret(statements, discard);
-        System.out.println("OK: no syntax or semantic errors found");
-    }
-
-    private static void execute(Path sourceFile) throws IOException {
-        Iterator<Statement> statements = Pipeline.parse(sourceFile);
-        new PrintScriptInterpreter().interpret(statements, System.out);
-    }
-
-    private static void format(Path sourceFile, Optional<Path> configFile) throws IOException {
-        Iterator<Statement> statements = Pipeline.parse(sourceFile);
-        FormatterConfig config = configFile.isPresent() ? loadFormatterConfig(configFile.get()) : FormatterConfig.defaultConfig();
-        String formatted = new PrintScriptFormatter().format(statements, config);
-        System.out.print(formatted);
-    }
-
-    private static void analyze(Path sourceFile, Optional<Path> configFile) throws IOException {
-        Iterator<Statement> statements = Pipeline.parse(sourceFile);
-        AnalyzerConfig config = configFile.isPresent() ? loadAnalyzerConfig(configFile.get()) : AnalyzerConfig.defaultConfig();
-        List<AnalysisFinding> findings = new PrintScriptAnalyzer().analyze(statements, config);
-
-        if (findings.isEmpty()) {
-            System.out.println("OK: no rule violations found");
-            return;
-        }
-        for (AnalysisFinding finding : findings) {
-            System.out.printf(
-                    "[%d:%d - %d:%d] %s%n",
-                    finding.start().line(),
-                    finding.start().column(),
-                    finding.end().line(),
-                    finding.end().column(),
-                    finding.message());
-        }
-        System.exit(1);
-    }
-
-    private static FormatterConfig loadFormatterConfig(Path configFile) throws IOException {
-        try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-            return new FormatterConfigLoader().load(reader, ConfigFiles.formatOf(configFile));
-        }
-    }
-
-    private static AnalyzerConfig loadAnalyzerConfig(Path configFile) throws IOException {
-        try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-            return new AnalyzerConfigLoader().load(reader, ConfigFiles.formatOf(configFile));
-        }
+        return switch (arguments.operation()) {
+            case VALIDATION -> new ValidationCommand(pipeline, new PrintScriptInterpreter());
+            case EXECUTION -> new ExecutionCommand(pipeline, new PrintScriptInterpreter());
+            case FORMATTING -> new FormattingCommand(pipeline, new PrintScriptFormatter(), new FormatterConfigLoader());
+            case ANALYZING -> new AnalyzingCommand(pipeline, new PrintScriptAnalyzer(), new AnalyzerConfigLoader());
+        };
     }
 
     private static void printError(PrintScriptException e) {

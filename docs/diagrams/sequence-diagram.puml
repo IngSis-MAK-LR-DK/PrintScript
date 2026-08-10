@@ -1,0 +1,64 @@
+@startuml PrintScript-Secuencia-Execution
+
+actor Usuario
+participant "Main" as Main
+participant "CliArguments" as Args
+participant "ExecutionCommand" as Cmd
+participant "Pipeline" as Pipeline
+participant "Lexer\n(PrintScriptLexer)" as Lexer
+participant "Parser\n(PrintScriptParser)" as Parser
+participant "Interpreter\n(PrintScriptInterpreter)" as Interp
+
+Usuario -> Main: main(args)
+activate Main
+
+Main -> Args: parse(args)
+Args --> Main: CliArguments
+
+Main -> Main: commandFor(arguments)\n(crea Lexer, Parser, Pipeline, Command)
+
+Main -> Cmd: run(arguments)
+activate Cmd
+
+Cmd -> Pipeline: parse(sourceFile)
+activate Pipeline
+Pipeline -> Lexer: tokenize(reader)
+Lexer --> Pipeline: Iterator<Token> (lazy, sin leer nada aún)
+Pipeline -> Parser: parse(tokens)
+Parser --> Pipeline: Iterator<Statement> (lazy)
+Pipeline --> Cmd: Iterator<Statement> (con progreso)
+deactivate Pipeline
+
+Cmd -> Interp: interpret(statements, System.out)
+activate Interp
+
+loop mientras statements.hasNext()
+  Interp -> Parser: statements.next()
+  activate Parser
+  note right of Parser
+    consume tokens del Iterator<Token>
+    hasta completar UN statement
+  end note
+  Parser -> Lexer: tokens.next() (una o más veces)
+  activate Lexer
+  note right of Lexer
+    lee char a char del Reader
+    hasta completar UN token
+  end note
+  Lexer --> Parser: Token
+  deactivate Lexer
+  Parser --> Interp: Statement
+  deactivate Parser
+
+  Interp -> Interp: statement.accept(StatementExecutor)
+  Interp -> "System.out": println(valor) (si es PrintlnStatement)
+end
+
+deactivate Interp
+Cmd --> Main: exit code (0)
+deactivate Cmd
+
+Main -> Main: System.exit(code) si code != 0
+deactivate Main
+
+@enduml
