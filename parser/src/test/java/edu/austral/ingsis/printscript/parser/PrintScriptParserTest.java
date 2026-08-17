@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
+import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -19,6 +21,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PrintScriptParserTest {
@@ -97,5 +100,34 @@ class PrintScriptParserTest {
     @Test
     void throwsOnMissingColon() {
         assertThrows(SyntaxException.class, () -> parse("let x number = 1;"));
+    }
+
+    @Test
+    void parsesExtensionOperatorWhenRegistered() {
+        OperatorDefinition modulo = stubModuloOperator();
+        PrintScriptLexer pluggableLexer = new PrintScriptLexer(Set.of(modulo));
+        PrintScriptParser pluggableParser = new PrintScriptParser(Set.of(modulo));
+
+        Iterator<Token> tokens = pluggableLexer.tokenize(new StringReader("x = 7 % 3;"));
+        List<Statement> statements = new ArrayList<>();
+        pluggableParser.parse(tokens).forEachRemaining(statements::add);
+
+        var assignment = assertInstanceOf(AssignmentStatement.class, statements.get(0));
+        var extended = assertInstanceOf(ExtendedBinaryExpression.class, assignment.value());
+        assertEquals(modulo, extended.operator());
+    }
+
+    private static OperatorDefinition stubModuloOperator() {
+        return new OperatorDefinition() {
+            @Override
+            public String symbol() {
+                return "%";
+            }
+
+            @Override
+            public double apply(double left, double right) {
+                return left % right;
+            }
+        };
     }
 }

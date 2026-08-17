@@ -98,4 +98,19 @@ class MainIntegrationTest {
 
         assertTrue(output().contains("let x : number=1;"));
     }
+
+    /**
+     * Proves the operator-plugin mechanism end-to-end through the real Gradle dependency graph:
+     * {@code cli} only has a {@code runtimeOnly} dependency on {@code plugins:modulo-operator} (see
+     * cli/build.gradle.kts), and {@link Main} discovers it purely via {@link java.util.ServiceLoader}
+     * at runtime. Nothing in this test wires the plugin in manually.
+     */
+    @Test
+    void executesAnOperatorContributedByAnInstalledPlugin() throws IOException {
+        Path source = writeSource("println(7 % 3);");
+
+        Main.main(new String[] {"execution", source.toString()});
+
+        assertTrue(output().contains("1"));
+    }
 }

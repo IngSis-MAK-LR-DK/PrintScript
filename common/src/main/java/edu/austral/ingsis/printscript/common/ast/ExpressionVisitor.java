@@ -10,4 +10,6 @@ public interface ExpressionVisitor<R> {
     R visitIdentifier(IdentifierExpression expression);
 
     R visitBinary(BinaryExpression expression);
+
+    R visitExtendedBinary(ExtendedBinaryExpression expression);
 }

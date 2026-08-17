@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.interpreter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
@@ -12,6 +13,7 @@ import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PrintScriptInterpreterTest {
@@ -88,5 +90,33 @@ class PrintScriptInterpreterTest {
     @Test
     void throwsWhenUsingVariableBeforeAssignment() {
         assertThrows(SemanticException.class, () -> run("let x: number;\nprintln(x);"));
+    }
+
+    @Test
+    void executesAnOperatorContributedByAPlugin() {
+        OperatorDefinition modulo = stubModuloOperator();
+        PrintScriptLexer pluggableLexer = new PrintScriptLexer(Set.of(modulo));
+        PrintScriptParser pluggableParser = new PrintScriptParser(Set.of(modulo));
+
+        Iterator<Statement> statements =
+                pluggableParser.parse(pluggableLexer.tokenize(new StringReader("println(7 % 3);")));
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        interpreter.interpret(statements, new PrintStream(buffer, true, StandardCharsets.UTF_8));
+
+        assertEquals("1\n", buffer.toString(StandardCharsets.UTF_8).replace("\r\n", "\n"));
+    }
+
+    private static OperatorDefinition stubModuloOperator() {
+        return new OperatorDefinition() {
+            @Override
+            public String symbol() {
+                return "%";
+            }
+
+            @Override
+            public double apply(double left, double right) {
+                return left % right;
+            }
+        };
     }
 }

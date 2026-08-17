@@ -1,5 +1,6 @@
 package edu.austral.ingsis.printscript.parser;
 
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenType;
@@ -7,6 +8,7 @@ import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
+import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -14,6 +16,7 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -33,9 +36,11 @@ import java.util.Optional;
 final class StatementIterator implements Iterator<Statement> {
 
     private final PeekableTokenStream stream;
+    private final Map<String, OperatorDefinition> extensionOperators;
 
-    StatementIterator(Iterator<Token> tokens) {
+    StatementIterator(Iterator<Token> tokens, Map<String, OperatorDefinition> extensionOperators) {
         this.stream = new PeekableTokenStream(tokens);
+        this.extensionOperators = extensionOperators;
     }
 
     @Override
@@ -117,12 +122,19 @@ final class StatementIterator implements Iterator<Statement> {
 
     private Expression parseMultiplicative() {
         Expression left = parsePrimary();
-        while (stream.check(TokenType.STAR) || stream.check(TokenType.SLASH)) {
+        while (stream.check(TokenType.STAR)
+                || stream.check(TokenType.SLASH)
+                || stream.check(TokenType.EXTENSION_OPERATOR)) {
             Token operatorToken = stream.advance();
             Expression right = parsePrimary();
-            BinaryOperator operator =
-                    operatorToken.type() == TokenType.STAR ? BinaryOperator.MULTIPLY : BinaryOperator.DIVIDE;
-            left = new BinaryExpression(left, operator, right, left.start(), right.end());
+            if (operatorToken.type() == TokenType.EXTENSION_OPERATOR) {
+                OperatorDefinition operator = extensionOperators.get(operatorToken.lexeme());
+                left = new ExtendedBinaryExpression(left, operator, right, left.start(), right.end());
+            } else {
+                BinaryOperator operator =
+                        operatorToken.type() == TokenType.STAR ? BinaryOperator.MULTIPLY : BinaryOperator.DIVIDE;
+                left = new BinaryExpression(left, operator, right, left.start(), right.end());
+            }
         }
         return left;
     }

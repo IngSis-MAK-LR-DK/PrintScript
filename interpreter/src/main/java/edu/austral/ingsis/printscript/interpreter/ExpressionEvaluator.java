@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.interpreter;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
+import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -42,6 +43,19 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
             case MULTIPLY -> arithmetic(left, right, expression, (a, b) -> a * b);
             case DIVIDE -> arithmetic(left, right, expression, (a, b) -> a / b);
         };
+    }
+
+    @Override
+    public Object visitExtendedBinary(ExtendedBinaryExpression expression) {
+        Object left = expression.left().accept(this);
+        Object right = expression.right().accept(this);
+        if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
+            return expression.operator().apply(leftNumber, rightNumber);
+        }
+        throw new SemanticException(
+                "Operator '" + expression.operator().symbol() + "' requires operands of type number",
+                expression.start(),
+                expression.end());
     }
 
     private Object add(Object left, Object right, BinaryExpression expression) {

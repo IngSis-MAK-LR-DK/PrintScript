@@ -1,6 +1,7 @@
 package edu.austral.ingsis.printscript.lexer;
 
 import edu.austral.ingsis.printscript.common.LexicalException;
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenType;
@@ -9,8 +10,8 @@ import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 /**
  * Scans one {@link Token} at a time from a {@link Reader}, keeping only a single character of
@@ -19,16 +20,16 @@ import java.util.Set;
  */
 final class TokenIterator implements Iterator<Token> {
 
-    private static final Set<String> KEYWORDS = Set.of("let", "println");
-
     private final PushbackReader reader;
+    private final Map<String, OperatorDefinition> extensionOperators;
     private int line = 1;
     private int column = 1;
     private Token buffered;
     private boolean finished = false;
 
-    TokenIterator(Reader source) {
+    TokenIterator(Reader source, Map<String, OperatorDefinition> extensionOperators) {
         this.reader = new PushbackReader(source, 1);
+        this.extensionOperators = extensionOperators;
     }
 
     @Override
@@ -76,10 +77,13 @@ final class TokenIterator implements Iterator<Token> {
 
         advance();
         TokenType symbol = symbolFor((char) c);
-        if (symbol == null) {
-            throw new LexicalException("Unexpected character '" + (char) c + "'", start, currentPosition());
+        if (symbol != null) {
+            return new Token(symbol, String.valueOf((char) c), start, currentPosition());
         }
-        return new Token(symbol, String.valueOf((char) c), start, currentPosition());
+        if (extensionOperators.containsKey(String.valueOf((char) c))) {
+            return new Token(TokenType.EXTENSION_OPERATOR, String.valueOf((char) c), start, currentPosition());
+        }
+        throw new LexicalException("Unexpected character '" + (char) c + "'", start, currentPosition());
     }
 
     private TokenType symbolFor(char c) {

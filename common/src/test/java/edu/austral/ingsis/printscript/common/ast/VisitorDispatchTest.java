@@ -2,6 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ class VisitorDispatchTest {
         Expression string = new StringLiteralExpression("a", P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
         Expression binary = new BinaryExpression(number, BinaryOperator.PLUS, number, P, P);
+        Expression extendedBinary = new ExtendedBinaryExpression(number, stubOperator(), number, P, P);
 
         ExpressionVisitor<String> visitor =
                 new ExpressionVisitor<>() {
@@ -38,12 +40,32 @@ class VisitorDispatchTest {
                     public String visitBinary(BinaryExpression expression) {
                         return "binary";
                     }
+
+                    @Override
+                    public String visitExtendedBinary(ExtendedBinaryExpression expression) {
+                        return "extendedBinary";
+                    }
                 };
 
         assertEquals("number", number.accept(visitor));
         assertEquals("string", string.accept(visitor));
         assertEquals("identifier", identifier.accept(visitor));
         assertEquals("binary", binary.accept(visitor));
+        assertEquals("extendedBinary", extendedBinary.accept(visitor));
+    }
+
+    private static OperatorDefinition stubOperator() {
+        return new OperatorDefinition() {
+            @Override
+            public String symbol() {
+                return "%";
+            }
+
+            @Override
+            public double apply(double left, double right) {
+                return left % right;
+            }
+        };
     }
 
     @Test

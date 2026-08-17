@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import edu.austral.ingsis.printscript.common.LexicalException;
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenType;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PrintScriptLexerTest {
@@ -98,5 +100,33 @@ class PrintScriptLexerTest {
     @Test
     void throwsOnUnexpectedCharacter() {
         assertThrows(LexicalException.class, () -> tokenize("let x: number = 1 % 2;"));
+    }
+
+    @Test
+    void recognizesExtensionOperatorsWhenRegistered() {
+        PrintScriptLexer lexerWithPlugin = new PrintScriptLexer(Set.of(stubModuloOperator()));
+
+        List<Token> tokens = new ArrayList<>();
+        Iterator<Token> iterator = lexerWithPlugin.tokenize(new StringReader("1 % 2"));
+        while (iterator.hasNext()) {
+            tokens.add(iterator.next());
+        }
+
+        assertEquals(TokenType.EXTENSION_OPERATOR, tokens.get(1).type());
+        assertEquals("%", tokens.get(1).lexeme());
+    }
+
+    private static OperatorDefinition stubModuloOperator() {
+        return new OperatorDefinition() {
+            @Override
+            public String symbol() {
+                return "%";
+            }
+
+            @Override
+            public double apply(double left, double right) {
+                return left % right;
+            }
+        };
     }
 }

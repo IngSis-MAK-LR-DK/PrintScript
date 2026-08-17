@@ -3,11 +3,13 @@ package edu.austral.ingsis.printscript.formatter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import edu.austral.ingsis.printscript.common.ConfigFormat;
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
 import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 import java.io.StringReader;
 import java.util.Iterator;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PrintScriptFormatterTest {
@@ -71,5 +73,33 @@ class PrintScriptFormatterTest {
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
         assertEquals(new FormatterConfig(true, false, false, 1), config);
+    }
+
+    @Test
+    void formatsAnOperatorContributedByAPlugin() {
+        OperatorDefinition modulo = stubModuloOperator();
+        PrintScriptLexer pluggableLexer = new PrintScriptLexer(Set.of(modulo));
+        PrintScriptParser pluggableParser = new PrintScriptParser(Set.of(modulo));
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        Iterator<Statement> statements =
+                pluggableParser.parse(pluggableLexer.tokenize(new StringReader("x=a%b;")));
+        String result = formatter.format(statements, config);
+
+        assertEquals("x = a % b;\n", result);
+    }
+
+    private static OperatorDefinition stubModuloOperator() {
+        return new OperatorDefinition() {
+            @Override
+            public String symbol() {
+                return "%";
+            }
+
+            @Override
+            public double apply(double left, double right) {
+                return left % right;
+            }
+        };
     }
 }

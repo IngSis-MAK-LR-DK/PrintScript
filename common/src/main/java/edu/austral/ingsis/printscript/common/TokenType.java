@@ -21,5 +21,8 @@ public enum TokenType {
     LEFT_PAREN,
     RIGHT_PAREN,
 
+    // Contributed by operator plugins at runtime (see OperatorDefinition)
+    EXTENSION_OPERATOR,
+
     EOF
 }
