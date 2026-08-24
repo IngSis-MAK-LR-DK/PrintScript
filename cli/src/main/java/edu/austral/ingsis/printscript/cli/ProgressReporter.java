@@ -5,8 +5,8 @@ package edu.austral.ingsis.printscript.cli;
  *
  * <p>Tracks a high-water mark, not a running sum: the lexer's own {@code peek}/{@code advance}
  * pattern re-reads the same byte offset more than once, so summing every reported delta would
- * overcount and pin the bar at 100% early. Taking the highest offset reached is exact regardless
- * of how many times any given position gets re-read.
+ * overcount and pin the bar at 100% early. Taking the highest offset reached is exact regardless of
+ * how many times any given position gets re-read.
  */
 final class ProgressReporter {
 

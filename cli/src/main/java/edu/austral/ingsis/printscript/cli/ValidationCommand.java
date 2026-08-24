@@ -1,11 +1,12 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.common.ast.Statement;
-import edu.austral.ingsis.printscript.interpreter.Interpreter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Iterator;
+
+import edu.austral.ingsis.printscript.common.ast.Statement;
+import edu.austral.ingsis.printscript.interpreter.Interpreter;
 
 /** Runs the interpreter with its output discarded, so only syntax/semantic errors surface. */
 final class ValidationCommand implements Command {

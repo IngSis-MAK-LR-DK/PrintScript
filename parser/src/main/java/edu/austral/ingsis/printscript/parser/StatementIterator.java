@@ -1,5 +1,10 @@
 package edu.austral.ingsis.printscript.parser;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
@@ -16,10 +21,6 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
 /**
  * Recursive-descent parser for the PrintScript 1.0 grammar:
@@ -115,7 +116,9 @@ final class StatementIterator implements Iterator<Statement> {
             Token operatorToken = stream.advance();
             Expression right = parseMultiplicative();
             BinaryOperator operator =
-                    operatorToken.type() == TokenType.PLUS ? BinaryOperator.PLUS : BinaryOperator.MINUS;
+                    operatorToken.type() == TokenType.PLUS
+                            ? BinaryOperator.PLUS
+                            : BinaryOperator.MINUS;
             left = new BinaryExpression(left, operator, right, left.start(), right.end());
         }
         return left;
@@ -130,10 +133,14 @@ final class StatementIterator implements Iterator<Statement> {
             Expression right = parsePrimary();
             if (operatorToken.type() == TokenType.EXTENSION_OPERATOR) {
                 OperatorDefinition operator = extensionOperators.get(operatorToken.lexeme());
-                left = new ExtendedBinaryExpression(left, operator, right, left.start(), right.end());
+                left =
+                        new ExtendedBinaryExpression(
+                                left, operator, right, left.start(), right.end());
             } else {
                 BinaryOperator operator =
-                        operatorToken.type() == TokenType.STAR ? BinaryOperator.MULTIPLY : BinaryOperator.DIVIDE;
+                        operatorToken.type() == TokenType.STAR
+                                ? BinaryOperator.MULTIPLY
+                                : BinaryOperator.DIVIDE;
                 left = new BinaryExpression(left, operator, right, left.start(), right.end());
             }
         }
@@ -145,7 +152,8 @@ final class StatementIterator implements Iterator<Statement> {
         switch (token.type()) {
             case NUMBER_LITERAL:
                 stream.advance();
-                return new NumberLiteralExpression(Double.parseDouble(token.lexeme()), token.start(), token.end());
+                return new NumberLiteralExpression(
+                        Double.parseDouble(token.lexeme()), token.start(), token.end());
             case STRING_LITERAL:
                 stream.advance();
                 return new StringLiteralExpression(token.lexeme(), token.start(), token.end());
@@ -159,7 +167,9 @@ final class StatementIterator implements Iterator<Statement> {
                 return inner;
             default:
                 throw new SyntaxException(
-                        "Expected an expression but found '" + token.lexeme() + "'", token.start(), token.end());
+                        "Expected an expression but found '" + token.lexeme() + "'",
+                        token.start(),
+                        token.end());
         }
     }
 }

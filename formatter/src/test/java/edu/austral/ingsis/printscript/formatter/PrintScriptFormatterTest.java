@@ -2,6 +2,10 @@ package edu.austral.ingsis.printscript.formatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.StringReader;
+import java.util.List;
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
@@ -15,15 +19,13 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
-import java.io.StringReader;
-import java.util.List;
-import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the formatter alone: the AST is built by hand here instead of going through a
- * real {@code Lexer}/{@code Parser} - {@code formatter} has no dependency (not even a test one)
- * on either module, so these tests only ever exercise the formatter's own rendering logic.
+ * Unit tests for the formatter alone: the AST is built by hand here instead of going through a real
+ * {@code Lexer}/{@code Parser} - {@code formatter} has no dependency (not even a test one) on
+ * either module, so these tests only ever exercise the formatter's own rendering logic.
  */
 class PrintScriptFormatterTest {
 
@@ -92,7 +94,12 @@ class PrintScriptFormatterTest {
         // x = 1 + 2;
         FormatterConfig config = new FormatterConfig(false, false, false, 0);
 
-        String result = format(config, assign("x", new BinaryExpression(num(1), BinaryOperator.PLUS, num(2), P, P)));
+        String result =
+                format(
+                        config,
+                        assign(
+                                "x",
+                                new BinaryExpression(num(1), BinaryOperator.PLUS, num(2), P, P)));
 
         assertEquals("x=1 + 2;\n", result);
     }
@@ -119,7 +126,9 @@ class PrintScriptFormatterTest {
         FormatterConfig config = new FormatterConfig(false, true, true, 0);
 
         String result =
-                format(config, assign("x", new ExtendedBinaryExpression(id("a"), modulo, id("b"), P, P)));
+                format(
+                        config,
+                        assign("x", new ExtendedBinaryExpression(id("a"), modulo, id("b"), P, P)));
 
         assertEquals("x = a % b;\n", result);
     }

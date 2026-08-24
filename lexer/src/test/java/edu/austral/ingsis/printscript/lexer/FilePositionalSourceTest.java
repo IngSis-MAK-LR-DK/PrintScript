@@ -9,13 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class FilePositionalSourceTest {
 
-    @TempDir
-    Path tempDir;
+    @TempDir Path tempDir;
 
     private Path writeFile(String content) throws IOException {
         Path file = tempDir.resolve("source.txt");
@@ -135,7 +135,9 @@ class FilePositionalSourceTest {
             var tokens = lexer.tokenize(source);
             tokens = tokens.tail(); // println
             tokens = tokens.tail(); // (
-            assertEquals(edu.austral.ingsis.printscript.common.TokenType.STRING_LITERAL, tokens.head().type());
+            assertEquals(
+                    edu.austral.ingsis.printscript.common.TokenType.STRING_LITERAL,
+                    tokens.head().type());
             assertEquals("café😀", tokens.head().lexeme());
         }
     }

@@ -2,9 +2,11 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
-import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 class VisitorDispatchTest {
@@ -17,7 +19,8 @@ class VisitorDispatchTest {
         Expression string = new StringLiteralExpression("a", P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
         Expression binary = new BinaryExpression(number, BinaryOperator.PLUS, number, P, P);
-        Expression extendedBinary = new ExtendedBinaryExpression(number, stubOperator(), number, P, P);
+        Expression extendedBinary =
+                new ExtendedBinaryExpression(number, stubOperator(), number, P, P);
 
         ExpressionVisitor<String> visitor =
                 new ExpressionVisitor<>() {

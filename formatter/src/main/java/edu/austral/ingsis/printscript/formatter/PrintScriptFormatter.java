@@ -1,8 +1,9 @@
 package edu.austral.ingsis.printscript.formatter;
 
+import java.util.Iterator;
+
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
-import java.util.Iterator;
 
 public final class PrintScriptFormatter implements Formatter {
 

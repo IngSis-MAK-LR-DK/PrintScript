@@ -1,9 +1,10 @@
 package edu.austral.ingsis.printscript.interpreter;
 
-import edu.austral.ingsis.printscript.common.Position;
-import edu.austral.ingsis.printscript.common.SemanticException;
 import java.util.HashMap;
 import java.util.Map;
+
+import edu.austral.ingsis.printscript.common.Position;
+import edu.austral.ingsis.printscript.common.SemanticException;
 
 /** Tracks declared variables: their static type and their current runtime value (if any). */
 final class Environment {
@@ -36,7 +37,8 @@ final class Environment {
         }
         Object value = values.get(name);
         if (value == null) {
-            throw new SemanticException("Variable '" + name + "' is used before being assigned", at, at);
+            throw new SemanticException(
+                    "Variable '" + name + "' is used before being assigned", at, at);
         }
         return value;
     }

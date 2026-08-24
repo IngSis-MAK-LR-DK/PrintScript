@@ -1,8 +1,9 @@
 package edu.austral.ingsis.printscript.interpreter;
 
-import edu.austral.ingsis.printscript.common.ast.Statement;
 import java.io.PrintStream;
 import java.util.Iterator;
+
+import edu.austral.ingsis.printscript.common.ast.Statement;
 
 public final class PrintScriptInterpreter implements Interpreter {
 

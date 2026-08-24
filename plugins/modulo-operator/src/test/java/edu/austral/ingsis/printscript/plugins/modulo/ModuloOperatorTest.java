@@ -3,8 +3,10 @@ package edu.austral.ingsis.printscript.plugins.modulo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import java.util.ServiceLoader;
+
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
+
 import org.junit.jupiter.api.Test;
 
 class ModuloOperatorTest {

@@ -53,7 +53,9 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
             return expression.operator().apply(leftNumber, rightNumber);
         }
         throw new SemanticException(
-                "Operator '" + expression.operator().symbol() + "' requires operands of type number",
+                "Operator '"
+                        + expression.operator().symbol()
+                        + "' requires operands of type number",
                 expression.start(),
                 expression.end());
     }
@@ -68,7 +70,8 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
         throw typeError(expression);
     }
 
-    private Object arithmetic(Object left, Object right, BinaryExpression expression, DoubleBinaryOp op) {
+    private Object arithmetic(
+            Object left, Object right, BinaryExpression expression, DoubleBinaryOp op) {
         if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
             return op.apply(leftNumber, rightNumber);
         }
@@ -77,7 +80,9 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     private SemanticException typeError(BinaryExpression expression) {
         return new SemanticException(
-                "Arithmetic operators require 'number' operands", expression.start(), expression.end());
+                "Arithmetic operators require 'number' operands",
+                expression.start(),
+                expression.end());
     }
 
     static String stringify(Object value) {

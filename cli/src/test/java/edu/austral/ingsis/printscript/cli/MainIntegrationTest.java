@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,8 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class MainIntegrationTest {
 
-    @TempDir
-    Path tempDir;
+    @TempDir Path tempDir;
 
     private final PrintStream originalOut = System.out;
     private final ByteArrayOutputStream capturedOut = new ByteArrayOutputStream();
@@ -102,8 +102,8 @@ class MainIntegrationTest {
     /**
      * Proves the operator-plugin mechanism end-to-end through the real Gradle dependency graph:
      * {@code cli} only has a {@code runtimeOnly} dependency on {@code plugins:modulo-operator} (see
-     * cli/build.gradle.kts), and {@link Main} discovers it purely via {@link java.util.ServiceLoader}
-     * at runtime. Nothing in this test wires the plugin in manually.
+     * cli/build.gradle.kts), and {@link Main} discovers it purely via {@link
+     * java.util.ServiceLoader} at runtime. Nothing in this test wires the plugin in manually.
      */
     @Test
     void executesAnOperatorContributedByAnInstalledPlugin() throws IOException {

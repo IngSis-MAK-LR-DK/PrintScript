@@ -3,6 +3,12 @@ package edu.austral.ingsis.printscript.interpreter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
@@ -17,11 +23,7 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 /**
@@ -69,7 +71,9 @@ class PrintScriptInterpreterTest {
 
     private String run(Statement... statements) {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        interpreter.interpret(List.of(statements).iterator(), new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        interpreter.interpret(
+                List.of(statements).iterator(),
+                new PrintStream(buffer, true, StandardCharsets.UTF_8));
         return buffer.toString(StandardCharsets.UTF_8).replace("\r\n", "\n");
     }
 
@@ -82,7 +86,11 @@ class PrintScriptInterpreterTest {
                 run(
                         let("name", "string", str("Joe")),
                         let("lastName", "string", str("Doe")),
-                        println(binary(binary(id("name"), BinaryOperator.PLUS, str(" ")), BinaryOperator.PLUS, id("lastName"))));
+                        println(
+                                binary(
+                                        binary(id("name"), BinaryOperator.PLUS, str(" ")),
+                                        BinaryOperator.PLUS,
+                                        id("lastName"))));
 
         assertEquals("Joe Doe\n", output);
     }
@@ -122,7 +130,13 @@ class PrintScriptInterpreterTest {
     @Test
     void arithmeticOperationsOnNumbers() {
         // println(2 + 3 * 4);
-        String output = run(println(binary(num(2), BinaryOperator.PLUS, binary(num(3), BinaryOperator.MULTIPLY, num(4)))));
+        String output =
+                run(
+                        println(
+                                binary(
+                                        num(2),
+                                        BinaryOperator.PLUS,
+                                        binary(num(3), BinaryOperator.MULTIPLY, num(4)))));
 
         assertEquals("14\n", output);
     }
@@ -143,7 +157,9 @@ class PrintScriptInterpreterTest {
     void throwsWhenUsingVariableBeforeAssignment() {
         // let x: number;
         // println(x);
-        assertThrows(SemanticException.class, () -> run(letUninitialized("x", "number"), println(id("x"))));
+        assertThrows(
+                SemanticException.class,
+                () -> run(letUninitialized("x", "number"), println(id("x"))));
     }
 
     @Test

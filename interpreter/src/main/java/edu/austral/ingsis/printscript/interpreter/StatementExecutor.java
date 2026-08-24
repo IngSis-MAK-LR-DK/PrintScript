@@ -1,10 +1,11 @@
 package edu.austral.ingsis.printscript.interpreter;
 
+import java.io.PrintStream;
+
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.io.PrintStream;
 
 final class StatementExecutor implements StatementVisitor<Void> {
 
@@ -26,7 +27,8 @@ final class StatementExecutor implements StatementVisitor<Void> {
                 .ifPresent(
                         initializer -> {
                             Object value = initializer.accept(evaluator);
-                            environment.assign(statement.identifierName(), value, statement.start());
+                            environment.assign(
+                                    statement.identifierName(), value, statement.start());
                         });
         return null;
     }

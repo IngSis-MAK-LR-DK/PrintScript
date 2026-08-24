@@ -6,11 +6,22 @@
 
 plugins {
     `java-library`
+    id("com.diffplug.spotless")
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+spotless {
+    java {
+        googleJavaFormat("1.22.0").aosp()
+        importOrder("java", "javax", "edu.austral", "")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
 

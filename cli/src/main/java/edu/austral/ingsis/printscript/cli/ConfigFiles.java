@@ -1,7 +1,8 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.config.ConfigFormat;
 import java.nio.file.Path;
+
+import edu.austral.ingsis.printscript.config.ConfigFormat;
 
 final class ConfigFiles {
 

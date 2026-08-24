@@ -38,7 +38,11 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
                     case MULTIPLY -> "*";
                     case DIVIDE -> "/";
                 };
-        return expression.left().accept(this) + " " + operator + " " + expression.right().accept(this);
+        return expression.left().accept(this)
+                + " "
+                + operator
+                + " "
+                + expression.right().accept(this);
     }
 
     @Override

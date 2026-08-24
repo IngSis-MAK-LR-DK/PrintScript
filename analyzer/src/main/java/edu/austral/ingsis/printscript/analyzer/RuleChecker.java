@@ -1,5 +1,9 @@
 package edu.austral.ingsis.printscript.analyzer;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.Expression;
@@ -9,9 +13,6 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.util.List;
-import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * Checks a single statement against the configured rules and reports the findings it produces.
@@ -45,7 +46,8 @@ final class RuleChecker implements StatementVisitor<List<AnalysisFinding>> {
 
     @Override
     public List<AnalysisFinding> visitPrintln(PrintlnStatement statement) {
-        if (config.printlnArgumentMustBeIdentifierOrLiteral() && !isIdentifierOrLiteral(statement.argument())) {
+        if (config.printlnArgumentMustBeIdentifierOrLiteral()
+                && !isIdentifierOrLiteral(statement.argument())) {
             return List.of(
                     new AnalysisFinding(
                             "'println' must be called with an identifier or a literal, not an expression",
@@ -55,17 +57,23 @@ final class RuleChecker implements StatementVisitor<List<AnalysisFinding>> {
         return List.of();
     }
 
-    private Optional<AnalysisFinding> checkIdentifierCase(String name, Position start, Position end) {
+    private Optional<AnalysisFinding> checkIdentifierCase(
+            String name, Position start, Position end) {
         if (!config.identifierCaseCheckEnabled()) {
             return Optional.empty();
         }
-        Pattern pattern = config.identifierCase() == IdentifierCase.CAMEL_CASE ? CAMEL_CASE : SNAKE_CASE;
+        Pattern pattern =
+                config.identifierCase() == IdentifierCase.CAMEL_CASE ? CAMEL_CASE : SNAKE_CASE;
         if (pattern.matcher(name).matches()) {
             return Optional.empty();
         }
         return Optional.of(
                 new AnalysisFinding(
-                        "Identifier '" + name + "' does not follow " + config.identifierCase() + " naming convention",
+                        "Identifier '"
+                                + name
+                                + "' does not follow "
+                                + config.identifierCase()
+                                + " naming convention",
                         start,
                         end));
     }

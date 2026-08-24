@@ -10,7 +10,10 @@ package edu.austral.ingsis.printscript.formatter;
  *     println} call
  */
 public record FormatterConfig(
-        boolean spaceBeforeColon, boolean spaceAfterColon, boolean spaceAroundEquals, int newLinesBeforePrintln) {
+        boolean spaceBeforeColon,
+        boolean spaceAfterColon,
+        boolean spaceAroundEquals,
+        int newLinesBeforePrintln) {
 
     public FormatterConfig {
         if (newLinesBeforePrintln < 0 || newLinesBeforePrintln > 2) {

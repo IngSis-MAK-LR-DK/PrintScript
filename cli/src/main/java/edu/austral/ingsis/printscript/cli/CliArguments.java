@@ -3,7 +3,8 @@ package edu.austral.ingsis.printscript.cli;
 import java.nio.file.Path;
 import java.util.Optional;
 
-record CliArguments(Operation operation, Path sourceFile, String version, Optional<Path> configFile) {
+record CliArguments(
+        Operation operation, Path sourceFile, String version, Optional<Path> configFile) {
 
     private static final String SUPPORTED_VERSION = "1.0";
 
@@ -34,7 +35,8 @@ record CliArguments(Operation operation, Path sourceFile, String version, Option
         }
 
         if (!version.equals(SUPPORTED_VERSION)) {
-            throw new CliUsageException("Unsupported PrintScript version: " + version + " (only 1.0 is supported)");
+            throw new CliUsageException(
+                    "Unsupported PrintScript version: " + version + " (only 1.0 is supported)");
         }
 
         return new CliArguments(operation, sourceFile, version, Optional.ofNullable(configFile));

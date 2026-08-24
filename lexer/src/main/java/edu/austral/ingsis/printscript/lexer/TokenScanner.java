@@ -1,17 +1,18 @@
 package edu.austral.ingsis.printscript.lexer;
 
+import java.util.Map;
+
 import edu.austral.ingsis.printscript.common.LexicalException;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
-import java.util.Map;
 
 /**
- * Pure replacement for the old mutable {@code TokenIterator}: every method threads a {@link
- * Cursor} value instead of mutating fields, so scanning the same cursor twice always yields the
- * same result.
+ * Pure replacement for the old mutable {@code TokenIterator}: every method threads a {@link Cursor}
+ * value instead of mutating fields, so scanning the same cursor twice always yields the same
+ * result.
  */
 final class TokenScanner {
 
@@ -27,7 +28,9 @@ final class TokenScanner {
         Cursor afterWhitespace = skipWhitespace(cursor);
         ScanResult result = scanToken(afterWhitespace);
         Cursor next = result.next();
-        return new TokenStream(result.token(), () -> scan(next)); // for EOF, never invoked (see TokenStream.tail())
+        return new TokenStream(
+                result.token(),
+                () -> scan(next)); // for EOF, never invoked (see TokenStream.tail())
     }
 
     private ScanResult scanToken(Cursor cursor) {
@@ -50,14 +53,18 @@ final class TokenScanner {
         Cursor after = cursor.advancedOver(c);
         TokenType symbol = symbolFor(c.codePoint());
         if (symbol != null) {
-            return new ScanResult(new Token(symbol, codePointToString(c.codePoint()), start, after.position()), after);
+            return new ScanResult(
+                    new Token(symbol, codePointToString(c.codePoint()), start, after.position()),
+                    after);
         }
         String symbolText = codePointToString(c.codePoint());
         if (extensionOperators.containsKey(symbolText)) {
             return new ScanResult(
-                    new Token(TokenType.EXTENSION_OPERATOR, symbolText, start, after.position()), after);
+                    new Token(TokenType.EXTENSION_OPERATOR, symbolText, start, after.position()),
+                    after);
         }
-        throw new LexicalException("Unexpected character '" + symbolText + "'", start, after.position());
+        throw new LexicalException(
+                "Unexpected character '" + symbolText + "'", start, after.position());
     }
 
     private ScanResult scanNumber(Cursor cursor, Position start) {
@@ -76,7 +83,8 @@ final class TokenScanner {
             }
         }
         return new ScanResult(
-                new Token(TokenType.NUMBER_LITERAL, lexeme.toString(), start, current.position()), current);
+                new Token(TokenType.NUMBER_LITERAL, lexeme.toString(), start, current.position()),
+                current);
     }
 
     private ScanResult scanIdentifierOrKeyword(Cursor cursor, Position start) {
@@ -109,7 +117,9 @@ final class TokenScanner {
             throw new LexicalException("Unterminated string literal", start, current.position());
         }
         current = current.advancedOver(peek(current)); // closing quote
-        return new ScanResult(new Token(TokenType.STRING_LITERAL, lexeme.toString(), start, current.position()), current);
+        return new ScanResult(
+                new Token(TokenType.STRING_LITERAL, lexeme.toString(), start, current.position()),
+                current);
     }
 
     private Cursor skipWhitespace(Cursor cursor) {
