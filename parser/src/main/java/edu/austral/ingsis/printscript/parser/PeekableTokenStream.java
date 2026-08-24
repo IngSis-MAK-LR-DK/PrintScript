@@ -2,29 +2,31 @@ package edu.austral.ingsis.printscript.parser;
 
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
+import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
-import java.util.Iterator;
 
-/** One-token look-ahead over a lazily produced {@link Token} stream. */
+/**
+ * A cursor into an immutable {@link TokenStream}. The {@code stream} field is still mutable — but
+ * unlike the old design (a buffer over a single-consumption {@code Iterator}), it only ever gets
+ * reassigned to point at a new, already-valid immutable value. The node it pointed to before
+ * stays untouched and usable; nothing is destructively consumed, so two of these wrapping the
+ * same starting stream can advance independently without interfering with each other.
+ */
 final class PeekableTokenStream {
 
-    private final Iterator<Token> tokens;
-    private Token lookahead;
+    private TokenStream stream;
 
-    PeekableTokenStream(Iterator<Token> tokens) {
-        this.tokens = tokens;
+    PeekableTokenStream(TokenStream stream) {
+        this.stream = stream;
     }
 
     Token peek() {
-        if (lookahead == null) {
-            lookahead = tokens.next();
-        }
-        return lookahead;
+        return stream.head();
     }
 
     Token advance() {
-        Token token = peek();
-        lookahead = null;
+        Token token = stream.head();
+        stream = stream.tail();
         return token;
     }
 

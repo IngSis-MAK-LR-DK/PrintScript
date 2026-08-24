@@ -10,6 +10,7 @@ import edu.austral.ingsis.printscript.interpreter.PrintScriptInterpreter;
 import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
 import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -39,6 +40,9 @@ public final class Main {
             System.exit(1);
         } catch (IOException e) {
             System.err.println("Could not read the source file: " + e.getMessage());
+            System.exit(1);
+        } catch (UncheckedIOException e) {
+            System.err.println("Could not read the source file: " + e.getCause().getMessage());
             System.exit(1);
         }
     }

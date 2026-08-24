@@ -113,4 +113,13 @@ class MainIntegrationTest {
 
         assertTrue(output().contains("1"));
     }
+
+    @Test
+    void executionHandlesMultiByteUtf8Source() throws IOException {
+        Path source = writeSource("let greeting: string = \"café 🙂\";\nprintln(greeting);");
+
+        Main.main(new String[] {"execution", source.toString()});
+
+        assertTrue(output().contains("café 🙂"));
+    }
 }

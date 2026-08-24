@@ -1,7 +1,7 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.common.ConfigLoader;
 import edu.austral.ingsis.printscript.common.ast.Statement;
+import edu.austral.ingsis.printscript.config.ConfigLoader;
 import edu.austral.ingsis.printscript.formatter.Formatter;
 import edu.austral.ingsis.printscript.formatter.FormatterConfig;
 import java.io.IOException;

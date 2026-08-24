@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.parser;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
+import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
@@ -38,7 +39,7 @@ final class StatementIterator implements Iterator<Statement> {
     private final PeekableTokenStream stream;
     private final Map<String, OperatorDefinition> extensionOperators;
 
-    StatementIterator(Iterator<Token> tokens, Map<String, OperatorDefinition> extensionOperators) {
+    StatementIterator(TokenStream tokens, Map<String, OperatorDefinition> extensionOperators) {
         this.stream = new PeekableTokenStream(tokens);
         this.extensionOperators = extensionOperators;
     }

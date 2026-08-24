@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(project(":common"))
-    api(project(":lexer"))
+    api(project(":ast"))
 }

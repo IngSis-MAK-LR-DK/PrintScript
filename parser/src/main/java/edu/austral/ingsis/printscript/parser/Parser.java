@@ -1,6 +1,6 @@
 package edu.austral.ingsis.printscript.parser;
 
-import edu.austral.ingsis.printscript.common.Token;
+import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import java.util.Iterator;
 
@@ -14,5 +14,5 @@ import java.util.Iterator;
  */
 public interface Parser {
 
-    Iterator<Statement> parse(Iterator<Token> tokens);
+    Iterator<Statement> parse(TokenStream tokens);
 }

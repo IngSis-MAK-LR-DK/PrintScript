@@ -1,12 +1,34 @@
 @startuml PrintScript-Herencia
 
 package "common" {
+
+  enum TokenType
+  class Token << record >>
+  class Position << record >>
+  class TokenStream
+  enum ConfigFormat
+  interface "ConfigLoader<T>" as ConfigLoader
+  interface OperatorDefinition
+
+  Token --> TokenType
+  Token --> Position
+  TokenStream --> Token : head()
+  TokenStream ..> TokenStream : tail()\n(cons-list inmutable, sin memoizar)
+  ConfigLoader ..> ConfigFormat : load(Reader, format)
+
+  abstract class PrintScriptException
+  PrintScriptException <|-- LexicalException
+  PrintScriptException <|-- SyntaxException
+  PrintScriptException <|-- SemanticException
+  PrintScriptException --> Position : start / end
+
   package "common.ast" {
     interface ASTNode
     interface Statement
     interface Expression
     interface StatementVisitor<R>
     interface ExpressionVisitor<R>
+    enum BinaryOperator
 
     ASTNode <|-- Statement
     ASTNode <|-- Expression
@@ -19,31 +41,49 @@ package "common" {
     Expression <|.. StringLiteralExpression
     Expression <|.. IdentifierExpression
     Expression <|.. BinaryExpression
+    Expression <|.. ExtendedBinaryExpression
+
+    BinaryExpression --> BinaryOperator : operator
+    ExtendedBinaryExpression --> OperatorDefinition : operator
   }
-
-  abstract class PrintScriptException
-  PrintScriptException <|-- LexicalException
-  PrintScriptException <|-- SyntaxException
-  PrintScriptException <|-- SemanticException
-
-  interface "ConfigLoader<T>" as ConfigLoader
 }
 
 package "lexer" {
+  interface PositionalSource
+  class StringPositionalSource
+  class FilePositionalSource
+  class Cursor
+  class TokenScanner
   interface Lexer
   class PrintScriptLexer
-  class TokenIterator
+
+  PositionalSource <|.. StringPositionalSource
+  PositionalSource <|.. FilePositionalSource
+  note right of PositionalSource
+    readAt(offset) es pura:
+    mismo offset -> mismo resultado.
+    Reemplaza a Reader (secuencial,
+    con estado) por lectura posicional.
+  end note
+
   Lexer <|.. PrintScriptLexer
-  PrintScriptLexer ..> TokenIterator : crea
+  PrintScriptLexer ..> TokenScanner : crea
+  TokenScanner --> Cursor : threading inmutable\n(line, column, offset)
+  TokenScanner ..> PositionalSource : readAt(offset)
+  TokenScanner ..> TokenStream : produce
+  TokenScanner ..> OperatorDefinition : Map<String,OperatorDefinition>\n(inyectado, opcional)
 }
 
 package "parser" {
   interface Parser
   class PrintScriptParser
   class StatementIterator
+  class PeekableTokenStream
   Parser <|.. PrintScriptParser
   PrintScriptParser ..> StatementIterator : crea
-  StatementIterator ..> Lexer : consume Iterator<Token>
+  StatementIterator --> PeekableTokenStream
+  PeekableTokenStream --> TokenStream : cursor\n(reasignado, nunca destructivo)
+  StatementIterator ..> OperatorDefinition : arma ExtendedBinaryExpression
 }
 
 package "interpreter" {
@@ -66,24 +106,44 @@ package "formatter" {
   class PrintScriptFormatter
   class StatementFormatter
   class ExpressionFormatter
+  class FormatterConfig << record >>
   class FormatterConfigLoader
   Formatter <|.. PrintScriptFormatter
   ConfigLoader <|.. FormatterConfigLoader
+  FormatterConfigLoader ..> FormatterConfig : produce
   StatementFormatter ..|> StatementVisitor
   ExpressionFormatter ..|> ExpressionVisitor
   PrintScriptFormatter --> StatementFormatter
   StatementFormatter --> ExpressionFormatter
+  StatementFormatter --> FormatterConfig
 }
 
 package "analyzer" {
   interface Analyzer
   class PrintScriptAnalyzer
   class RuleChecker
+  class AnalyzerConfig << record >>
   class AnalyzerConfigLoader
+  class AnalysisFinding << record >>
+  enum IdentifierCase
   Analyzer <|.. PrintScriptAnalyzer
   ConfigLoader <|.. AnalyzerConfigLoader
+  AnalyzerConfigLoader ..> AnalyzerConfig : produce
+  AnalyzerConfig --> IdentifierCase
   RuleChecker ..|> StatementVisitor
+  RuleChecker --> AnalyzerConfig
+  RuleChecker ..> AnalysisFinding : produce
   PrintScriptAnalyzer --> RuleChecker
+}
+
+package "plugins.modulo-operator" {
+  class ModuloOperator
+  OperatorDefinition <|.. ModuloOperator
+  note right of ModuloOperator
+    Registrado en
+    META-INF/services/...OperatorDefinition
+    (solo depende de "common")
+  end note
 }
 
 package "cli" {
@@ -94,15 +154,28 @@ package "cli" {
   class ExecutionCommand
   class FormattingCommand
   class AnalyzingCommand
+  class CliArguments << record >>
+  enum Operation
+  class CliUsageException
+  class ConfigFiles
+  class ProgressReporter
+  class ProgressReportingIterator
 
   Command <|.. ValidationCommand
   Command <|.. ExecutionCommand
   Command <|.. FormattingCommand
   Command <|.. AnalyzingCommand
 
+  CliArguments --> Operation
+
+  Main ..> CliArguments : parse(args)
+  Main ..> CliUsageException : catch
   Main ..> Command : crea e invoca
-  Main ..> Lexer : new PrintScriptLexer()
-  Main ..> Parser : new PrintScriptParser()
+  Main ..> Lexer : new PrintScriptLexer(operators)
+  Main ..> Parser : new PrintScriptParser(operators)
+  Main ..> OperatorDefinition : ServiceLoader.load(...)
+  Main .[#b30000].> ModuloOperator : descubierto en runtime\n(runtimeOnly, sin dependencia\nde compilación)
+
   ValidationCommand --> Pipeline
   ValidationCommand --> Interpreter
   ExecutionCommand --> Pipeline
@@ -110,11 +183,20 @@ package "cli" {
   FormattingCommand --> Pipeline
   FormattingCommand --> Formatter
   FormattingCommand --> ConfigLoader
+  FormattingCommand ..> ConfigFiles : detecta YAML/JSON
   AnalyzingCommand --> Pipeline
   AnalyzingCommand --> Analyzer
   AnalyzingCommand --> ConfigLoader
+  AnalyzingCommand ..> ConfigFiles : detecta YAML/JSON
+
   Pipeline --> Lexer
   Pipeline --> Parser
+  Pipeline ..> FilePositionalSource : crea
+  Pipeline ..> ProgressReporter : crea
+  Pipeline ..> ProgressReportingIterator : crea
+  ProgressReportingIterator --> ProgressReporter
+  ProgressReportingIterator --> FilePositionalSource : Closeable\n(cierra al agotar el iterator)
+  ProgressReporter ..> FilePositionalSource : reachedOffset(offset)\n(marca de agua, no suma)
 }
 
 @enduml
