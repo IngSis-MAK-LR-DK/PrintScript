@@ -6,10 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import edu.austral.ingsis.printscript.common.LexicalException;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Token;
+import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
-import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -19,10 +18,18 @@ class PrintScriptLexerTest {
     private final PrintScriptLexer lexer = new PrintScriptLexer();
 
     private List<Token> tokenize(String source) {
+        return drain(lexer.tokenize(new StringPositionalSource(source)));
+    }
+
+    private static List<Token> drain(TokenStream stream) {
         List<Token> tokens = new ArrayList<>();
-        Iterator<Token> iterator = lexer.tokenize(new StringReader(source));
-        while (iterator.hasNext()) {
-            tokens.add(iterator.next());
+        TokenStream current = stream;
+        while (true) {
+            tokens.add(current.head());
+            if (current.isAtEnd()) {
+                break;
+            }
+            current = current.tail();
         }
         return tokens;
     }
@@ -106,11 +113,7 @@ class PrintScriptLexerTest {
     void recognizesExtensionOperatorsWhenRegistered() {
         PrintScriptLexer lexerWithPlugin = new PrintScriptLexer(Set.of(stubModuloOperator()));
 
-        List<Token> tokens = new ArrayList<>();
-        Iterator<Token> iterator = lexerWithPlugin.tokenize(new StringReader("1 % 2"));
-        while (iterator.hasNext()) {
-            tokens.add(iterator.next());
-        }
+        List<Token> tokens = drain(lexerWithPlugin.tokenize(new StringPositionalSource("1 % 2")));
 
         assertEquals(TokenType.EXTENSION_OPERATOR, tokens.get(1).type());
         assertEquals("%", tokens.get(1).lexeme());

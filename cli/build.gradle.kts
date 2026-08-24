@@ -5,6 +5,8 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":ast"))
+    implementation(project(":config"))
     implementation(project(":lexer"))
     implementation(project(":parser"))
     implementation(project(":interpreter"))

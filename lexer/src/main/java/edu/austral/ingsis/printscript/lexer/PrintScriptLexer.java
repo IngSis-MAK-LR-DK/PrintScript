@@ -1,10 +1,8 @@
 package edu.austral.ingsis.printscript.lexer;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
-import edu.austral.ingsis.printscript.common.Token;
-import java.io.Reader;
+import edu.austral.ingsis.printscript.common.TokenStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,7 +24,7 @@ public final class PrintScriptLexer implements Lexer {
     }
 
     @Override
-    public Iterator<Token> tokenize(Reader source) {
-        return new TokenIterator(source, extensionOperators);
+    public TokenStream tokenize(PositionalSource source) {
+        return new TokenScanner(source, extensionOperators).scan(Cursor.start());
     }
 }

@@ -1,16 +1,21 @@
 package edu.austral.ingsis.printscript.cli;
 
 import edu.austral.ingsis.printscript.common.ast.Statement;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 
 final class ProgressReportingIterator implements Iterator<Statement> {
 
     private final Iterator<Statement> delegate;
     private final ProgressReporter reporter;
+    private final Closeable source;
 
-    ProgressReportingIterator(Iterator<Statement> delegate, ProgressReporter reporter) {
+    ProgressReportingIterator(Iterator<Statement> delegate, ProgressReporter reporter, Closeable source) {
         this.delegate = delegate;
         this.reporter = reporter;
+        this.source = source;
     }
 
     @Override
@@ -18,6 +23,11 @@ final class ProgressReportingIterator implements Iterator<Statement> {
         boolean hasNext = delegate.hasNext();
         if (!hasNext) {
             reporter.finish();
+            try {
+                source.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
         return hasNext;
     }

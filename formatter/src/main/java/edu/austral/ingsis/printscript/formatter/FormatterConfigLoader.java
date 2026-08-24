@@ -2,8 +2,8 @@ package edu.austral.ingsis.printscript.formatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import edu.austral.ingsis.printscript.common.ConfigFormat;
-import edu.austral.ingsis.printscript.common.ConfigLoader;
+import edu.austral.ingsis.printscript.config.ConfigFormat;
+import edu.austral.ingsis.printscript.config.ConfigLoader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;

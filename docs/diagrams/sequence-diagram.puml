@@ -3,6 +3,8 @@
 actor Usuario
 participant "Main" as Main
 participant "CliArguments" as Args
+participant "java.util.ServiceLoader" as SPI
+participant "ModuloOperator\n(plugins:modulo-operator)" as Plugin
 participant "ExecutionCommand" as Cmd
 participant "Pipeline" as Pipeline
 participant "Lexer\n(PrintScriptLexer)" as Lexer
@@ -15,18 +17,30 @@ activate Main
 Main -> Args: parse(args)
 Args --> Main: CliArguments
 
-Main -> Main: commandFor(arguments)\n(crea Lexer, Parser, Pipeline, Command)
+Main -> SPI: load(OperatorDefinition.class)
+activate SPI
+SPI -> Plugin: instancia (via META-INF/services)
+note right of SPI
+  Solo encuentra el plugin si el módulo
+  está en el classpath (cli tiene una
+  dependencia runtimeOnly, no de compilación)
+end note
+SPI --> Main: Set<OperatorDefinition>
+deactivate SPI
+
+Main -> Main: commandFor(arguments)\n(crea Lexer/Parser con los operadores\ndescubiertos, Pipeline, Command)
 
 Main -> Cmd: run(arguments)
 activate Cmd
 
 Cmd -> Pipeline: parse(sourceFile)
 activate Pipeline
-Pipeline -> Lexer: tokenize(reader)
-Lexer --> Pipeline: Iterator<Token> (lazy, sin leer nada aún)
+Pipeline -> Pipeline: new FilePositionalSource(file, reporter::reachedOffset)\n(lectura posicional, no un Reader secuencial)
+Pipeline -> Lexer: tokenize(source)
+Lexer --> Pipeline: TokenStream\n(el primer token ya está escaneado;\nel resto es perezoso vía tail())
 Pipeline -> Parser: parse(tokens)
 Parser --> Pipeline: Iterator<Statement> (lazy)
-Pipeline --> Cmd: Iterator<Statement> (con progreso)
+Pipeline --> Cmd: Iterator<Statement> (con progreso;\ncierra FilePositionalSource al agotarse)
 deactivate Pipeline
 
 Cmd -> Interp: interpret(statements, System.out)
@@ -36,16 +50,21 @@ loop mientras statements.hasNext()
   Interp -> Parser: statements.next()
   activate Parser
   note right of Parser
-    consume tokens del Iterator<Token>
-    hasta completar UN statement
+    PeekableTokenStream reasigna su
+    cursor (stream = stream.tail())
+    hasta completar UN statement.
+    Nunca destruye el TokenStream
+    anterior, solo deja de apuntarlo.
   end note
-  Parser -> Lexer: tokens.next() (una o más veces)
+  Parser -> Lexer: stream.tail() (una o más veces)
   activate Lexer
   note right of Lexer
-    lee char a char del Reader
-    hasta completar UN token
+    TokenScanner lee code points por
+    offset (FilePositionalSource /
+    StringPositionalSource) hasta
+    completar UN token nuevo
   end note
-  Lexer --> Parser: Token
+  Lexer --> Parser: TokenStream (nuevo nodo)
   deactivate Lexer
   Parser --> Interp: Statement
   deactivate Parser
