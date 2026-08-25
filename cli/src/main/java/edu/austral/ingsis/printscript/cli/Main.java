@@ -26,25 +26,34 @@ import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 public final class Main {
 
     public static void main(String[] args) {
+        int exitCode = run(args);
+        if (exitCode != 0) {
+            System.exit(exitCode);
+        }
+    }
+
+    /**
+     * Does everything {@link #main} does except actually terminate the process, so tests can drive
+     * every error branch (including the ones a real run would exit(2)/exit(1) for) without killing
+     * the test JVM.
+     */
+    static int run(String[] args) {
         try {
             CliArguments arguments = CliArguments.parse(args);
             Command command = commandFor(arguments);
-            int exitCode = command.run(arguments);
-            if (exitCode != 0) {
-                System.exit(exitCode);
-            }
+            return command.run(arguments);
         } catch (CliUsageException e) {
             System.err.println(e.getMessage());
-            System.exit(2);
+            return 2;
         } catch (PrintScriptException e) {
             printError(e);
-            System.exit(1);
+            return 1;
         } catch (IOException e) {
             System.err.println("Could not read the source file: " + e.getMessage());
-            System.exit(1);
+            return 1;
         } catch (UncheckedIOException e) {
             System.err.println("Could not read the source file: " + e.getCause().getMessage());
-            System.exit(1);
+            return 1;
         }
     }
 
