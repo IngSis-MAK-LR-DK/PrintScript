@@ -6,6 +6,7 @@
 
 plugins {
     `java-library`
+    checkstyle
     id("com.diffplug.spotless")
 }
 
@@ -24,6 +25,15 @@ spotless {
         endWithNewline()
     }
 }
+
+checkstyle {
+    toolVersion = "10.17.0"
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+    maxWarnings = 0
+}
+
+
 
 repositories {
     mavenCentral()
