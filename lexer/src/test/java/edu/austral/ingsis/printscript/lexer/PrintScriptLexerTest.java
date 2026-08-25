@@ -3,14 +3,16 @@ package edu.austral.ingsis.printscript.lexer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import edu.austral.ingsis.printscript.common.LexicalException;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
 class PrintScriptLexerTest {

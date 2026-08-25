@@ -1,12 +1,14 @@
 package edu.austral.ingsis.printscript.analyzer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import edu.austral.ingsis.printscript.config.ConfigFormat;
-import edu.austral.ingsis.printscript.config.ConfigLoader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+
+import edu.austral.ingsis.printscript.config.ConfigFormat;
+import edu.austral.ingsis.printscript.config.ConfigLoader;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /** Reads an {@link AnalyzerConfig} out of a YAML or JSON file. */
 public final class AnalyzerConfigLoader implements ConfigLoader<AnalyzerConfig> {

@@ -1,7 +1,8 @@
 package edu.austral.ingsis.printscript.common.ast;
 
-import edu.austral.ingsis.printscript.common.Position;
 import java.util.Optional;
+
+import edu.austral.ingsis.printscript.common.Position;
 
 /** {@code let <identifierName>: <typeName> [= <initializer>];} */
 public record VariableDeclarationStatement(

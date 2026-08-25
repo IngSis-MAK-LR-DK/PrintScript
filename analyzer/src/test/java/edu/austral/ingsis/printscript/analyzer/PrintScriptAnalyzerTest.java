@@ -3,6 +3,10 @@ package edu.austral.ingsis.printscript.analyzer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.StringReader;
+import java.util.List;
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
@@ -14,15 +18,13 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
-import java.io.StringReader;
-import java.util.List;
-import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the analyzer alone: the AST is built by hand here instead of going through a
- * real {@code Lexer}/{@code Parser} - {@code analyzer} has no dependency (not even a test one) on
- * either module, so these tests only ever exercise the analyzer's own rule-checking logic.
+ * Unit tests for the analyzer alone: the AST is built by hand here instead of going through a real
+ * {@code Lexer}/{@code Parser} - {@code analyzer} has no dependency (not even a test one) on either
+ * module, so these tests only ever exercise the analyzer's own rule-checking logic.
  */
 class PrintScriptAnalyzerTest {
 

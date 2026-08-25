@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.function.LongConsumer;
 
-/** {@link PositionalSource} backed by a real file, read via positional (non-cursor-mutating) I/O. */
+/**
+ * {@link PositionalSource} backed by a real file, read via positional (non-cursor-mutating) I/O.
+ */
 public final class FilePositionalSource implements PositionalSource, Closeable {
 
     private static final int MAX_UTF8_CHAR_BYTES = 4;
@@ -62,7 +64,8 @@ public final class FilePositionalSource implements PositionalSource, Closeable {
         }
     }
 
-    private CharRead decodeFirstCodePoint(ByteBuffer bytes, long offset, boolean endOfInput) throws IOException {
+    private CharRead decodeFirstCodePoint(ByteBuffer bytes, long offset, boolean endOfInput)
+            throws IOException {
         // A fresh decoder per call, on purpose: CharsetDecoder is stateful/not thread-safe, and a
         // shared field would reintroduce exactly the hidden mutable state this class avoids.
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder(); // default action: REPORT

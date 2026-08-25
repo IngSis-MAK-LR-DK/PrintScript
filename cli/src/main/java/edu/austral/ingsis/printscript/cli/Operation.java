@@ -13,7 +13,9 @@ enum Operation {
             return Operation.valueOf(argument.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new CliUsageException(
-                    "Unknown operation '" + argument + "'. Expected one of: validation, execution, formatting, analyzing");
+                    "Unknown operation '"
+                            + argument
+                            + "'. Expected one of: validation, execution, formatting, analyzing");
         }
     }
 }

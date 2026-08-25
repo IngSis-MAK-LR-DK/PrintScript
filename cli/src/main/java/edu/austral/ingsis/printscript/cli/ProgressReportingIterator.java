@@ -1,10 +1,11 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.common.ast.Statement;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
+
+import edu.austral.ingsis.printscript.common.ast.Statement;
 
 final class ProgressReportingIterator implements Iterator<Statement> {
 
@@ -12,7 +13,8 @@ final class ProgressReportingIterator implements Iterator<Statement> {
     private final ProgressReporter reporter;
     private final Closeable source;
 
-    ProgressReportingIterator(Iterator<Statement> delegate, ProgressReporter reporter, Closeable source) {
+    ProgressReportingIterator(
+            Iterator<Statement> delegate, ProgressReporter reporter, Closeable source) {
         this.delegate = delegate;
         this.reporter = reporter;
         this.source = source;

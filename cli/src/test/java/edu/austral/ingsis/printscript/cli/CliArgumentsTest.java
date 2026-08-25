@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+
 import org.junit.jupiter.api.Test;
 
 class CliArgumentsTest {
@@ -29,7 +30,8 @@ class CliArgumentsTest {
     @Test
     void parsesConfigFlag() {
         CliArguments arguments =
-                CliArguments.parse(new String[] {"formatting", "program.prs", "--config", "rules.yaml"});
+                CliArguments.parse(
+                        new String[] {"formatting", "program.prs", "--config", "rules.yaml"});
 
         assertEquals(Path.of("rules.yaml"), arguments.configFile().orElseThrow());
     }
@@ -41,20 +43,26 @@ class CliArgumentsTest {
 
     @Test
     void throwsOnUnknownOperation() {
-        assertThrows(CliUsageException.class, () -> CliArguments.parse(new String[] {"compile", "program.prs"}));
+        assertThrows(
+                CliUsageException.class,
+                () -> CliArguments.parse(new String[] {"compile", "program.prs"}));
     }
 
     @Test
     void throwsOnUnsupportedVersion() {
         assertThrows(
                 CliUsageException.class,
-                () -> CliArguments.parse(new String[] {"execution", "program.prs", "--version", "2.0"}));
+                () ->
+                        CliArguments.parse(
+                                new String[] {"execution", "program.prs", "--version", "2.0"}));
     }
 
     @Test
     void throwsOnUnknownFlag() {
         assertThrows(
                 CliUsageException.class,
-                () -> CliArguments.parse(new String[] {"execution", "program.prs", "--bogus", "x"}));
+                () ->
+                        CliArguments.parse(
+                                new String[] {"execution", "program.prs", "--bogus", "x"}));
     }
 }

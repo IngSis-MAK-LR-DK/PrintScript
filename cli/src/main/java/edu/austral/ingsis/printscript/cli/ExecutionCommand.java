@@ -1,9 +1,10 @@
 package edu.austral.ingsis.printscript.cli;
 
-import edu.austral.ingsis.printscript.common.ast.Statement;
-import edu.austral.ingsis.printscript.interpreter.Interpreter;
 import java.io.IOException;
 import java.util.Iterator;
+
+import edu.austral.ingsis.printscript.common.ast.Statement;
+import edu.austral.ingsis.printscript.interpreter.Interpreter;
 
 final class ExecutionCommand implements Command {
 

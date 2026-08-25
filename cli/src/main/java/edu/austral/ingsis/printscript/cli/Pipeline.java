@@ -1,14 +1,15 @@
 package edu.austral.ingsis.printscript.cli;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Iterator;
+
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.lexer.FilePositionalSource;
 import edu.austral.ingsis.printscript.lexer.Lexer;
 import edu.austral.ingsis.printscript.parser.Parser;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Iterator;
 
 /** Wires source file -> lexer -> parser, reporting progress on the console as it goes. */
 final class Pipeline {

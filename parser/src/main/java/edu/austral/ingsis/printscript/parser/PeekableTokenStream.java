@@ -8,9 +8,9 @@ import edu.austral.ingsis.printscript.common.TokenType;
 /**
  * A cursor into an immutable {@link TokenStream}. The {@code stream} field is still mutable — but
  * unlike the old design (a buffer over a single-consumption {@code Iterator}), it only ever gets
- * reassigned to point at a new, already-valid immutable value. The node it pointed to before
- * stays untouched and usable; nothing is destructively consumed, so two of these wrapping the
- * same starting stream can advance independently without interfering with each other.
+ * reassigned to point at a new, already-valid immutable value. The node it pointed to before stays
+ * untouched and usable; nothing is destructively consumed, so two of these wrapping the same
+ * starting stream can advance independently without interfering with each other.
  */
 final class PeekableTokenStream {
 
@@ -38,7 +38,9 @@ final class PeekableTokenStream {
         Token token = peek();
         if (token.type() != type) {
             throw new SyntaxException(
-                    errorMessage + ", but found '" + token.lexeme() + "'", token.start(), token.end());
+                    errorMessage + ", but found '" + token.lexeme() + "'",
+                    token.start(),
+                    token.end());
         }
         return advance();
     }

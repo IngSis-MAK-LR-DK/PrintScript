@@ -5,6 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
@@ -19,16 +24,13 @@ import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for the parser alone: token streams are built by hand here instead of going through
- * a real {@code Lexer} - {@code parser} has no dependency (not even a test one) on {@code lexer},
- * so these tests only ever exercise the parser's own grammar logic.
+ * Unit tests for the parser alone: token streams are built by hand here instead of going through a
+ * real {@code Lexer} - {@code parser} has no dependency (not even a test one) on {@code lexer}, so
+ * these tests only ever exercise the parser's own grammar logic.
  */
 class PrintScriptParserTest {
 
@@ -48,7 +50,8 @@ class PrintScriptParserTest {
     private static TokenStream buildFrom(List<Token> tokens) {
         Token head = tokens.get(0);
         if (head.type() == TokenType.EOF) {
-            return new TokenStream(head, () -> buildFrom(tokens)); // never invoked, tail() short-circuits at EOF
+            return new TokenStream(
+                    head, () -> buildFrom(tokens)); // never invoked, tail() short-circuits at EOF
         }
         List<Token> rest = tokens.subList(1, tokens.size());
         return new TokenStream(head, () -> buildFrom(rest));

@@ -1,10 +1,11 @@
 package edu.austral.ingsis.printscript.lexer;
 
-import edu.austral.ingsis.printscript.common.OperatorDefinition;
-import edu.austral.ingsis.printscript.common.TokenStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.TokenStream;
 
 public final class PrintScriptLexer implements Lexer {
 
@@ -14,7 +15,9 @@ public final class PrintScriptLexer implements Lexer {
         this(Set.of());
     }
 
-    /** {@code extensionOperators} are contributed by plugin modules discovered via ServiceLoader. */
+    /**
+     * {@code extensionOperators} are contributed by plugin modules discovered via ServiceLoader.
+     */
     public PrintScriptLexer(Set<OperatorDefinition> extensionOperators) {
         Map<String, OperatorDefinition> bySymbol = new HashMap<>();
         for (OperatorDefinition operator : extensionOperators) {

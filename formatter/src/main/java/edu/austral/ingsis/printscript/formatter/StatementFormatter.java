@@ -25,7 +25,11 @@ final class StatementFormatter implements StatementVisitor<String> {
             text.append(' ');
         }
         text.append(statement.typeName());
-        statement.initializer().ifPresent(initializer -> appendAssignedValue(text, initializer.accept(expressionFormatter)));
+        statement
+                .initializer()
+                .ifPresent(
+                        initializer ->
+                                appendAssignedValue(text, initializer.accept(expressionFormatter)));
         return text.append(';').toString();
     }
 

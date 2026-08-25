@@ -1,9 +1,10 @@
 package edu.austral.ingsis.printscript.analyzer;
 
-import edu.austral.ingsis.printscript.common.ast.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import edu.austral.ingsis.printscript.common.ast.Statement;
 
 public final class PrintScriptAnalyzer implements Analyzer {
 
