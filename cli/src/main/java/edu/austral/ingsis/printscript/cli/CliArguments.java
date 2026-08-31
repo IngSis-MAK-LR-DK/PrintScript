@@ -25,10 +25,9 @@ record CliArguments(
 
         for (int i = 2; i < args.length; i++) {
             String flag = args[i];
-            String value = valueFor(args, flag, i);
             switch (flag) {
-                case "--version" -> version = value;
-                case "--config" -> configFile = Path.of(value);
+                case "--version" -> version = valueFor(args, flag, i);
+                case "--config" -> configFile = Path.of(valueFor(args, flag, i));
                 default -> throw new CliUsageException("Unknown argument: " + flag + "\n" + USAGE);
             }
             i++;
