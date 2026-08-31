@@ -2,4 +2,5 @@
 // No depende de ningun otro modulo del proyecto.
 plugins {
     id("printscript.java-conventions")
+    id("printscript.published-library")
 }

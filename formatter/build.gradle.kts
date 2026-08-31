@@ -1,5 +1,6 @@
 plugins {
     id("printscript.java-conventions")
+    id("printscript.published-library")
 }
 
 dependencies {
