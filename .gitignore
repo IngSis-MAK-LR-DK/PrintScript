@@ -11,3 +11,6 @@ out/
 
 # OS
 .DS_Store
+
+# Archivos de prueba manual
+scratch/
