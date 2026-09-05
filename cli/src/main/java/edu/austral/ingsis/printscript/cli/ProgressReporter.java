@@ -30,13 +30,12 @@ final class ProgressReporter {
         }
         int percent = (int) Math.min(100, (bytesConsumed * 100) / totalBytes);
         if (percent != lastPercentPrinted) {
-            System.out.print("\rParsing... " + percent + "%");
-            System.out.flush();
+            System.err.println("Parsing... " + percent + "%");
             lastPercentPrinted = percent;
         }
     }
 
     void finish() {
-        System.out.println("\rParsing... 100%");
+        System.err.println("Parsing... 100%");
     }
 }
