@@ -17,6 +17,7 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
+import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
 
@@ -40,6 +41,10 @@ class PrintScriptFormatterTest {
 
     private static Expression id(String name) {
         return new IdentifierExpression(name, P, P);
+    }
+
+    private static Expression str(String value) {
+        return new StringLiteralExpression(value, P, P);
     }
 
     private static Statement let(String name, String type, Expression initializer) {
@@ -102,6 +107,16 @@ class PrintScriptFormatterTest {
                                 new BinaryExpression(num(1), BinaryOperator.PLUS, num(2), P, P)));
 
         assertEquals("x=1 + 2;\n", result);
+    }
+
+    @Test
+    void usesSingleQuotesWhenTheStringContainsADoubleQuote() {
+        // println('he said "hi"');
+        FormatterConfig config = FormatterConfig.defaultConfig();
+
+        String result = format(config, println(str("he said \"hi\"")));
+
+        assertEquals("println('he said \"hi\"');\n", result);
     }
 
     @Test

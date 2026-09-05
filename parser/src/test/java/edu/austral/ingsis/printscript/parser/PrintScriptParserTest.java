@@ -226,7 +226,7 @@ class PrintScriptParserTest {
     @Test
     void parsesExtensionOperatorWhenRegistered() {
         // x = 7 % 3;
-        OperatorDefinition modulo = stubModuloOperator();
+        OperatorDefinition modulo = stubOperator("%");
         PrintScriptParser pluggableParser = new PrintScriptParser(Set.of(modulo));
 
         TokenStream tokens =
@@ -247,11 +247,20 @@ class PrintScriptParserTest {
         assertEquals(modulo, extended.operator());
     }
 
-    private static OperatorDefinition stubModuloOperator() {
+    @Test
+    void throwsWhenTwoOperatorPluginsRegisterTheSameSymbol() {
+        OperatorDefinition first = stubOperator("%");
+        OperatorDefinition second = stubOperator("%");
+
+        assertThrows(
+                IllegalArgumentException.class, () -> new PrintScriptParser(Set.of(first, second)));
+    }
+
+    private static OperatorDefinition stubOperator(String symbol) {
         return new OperatorDefinition() {
             @Override
             public String symbol() {
-                return "%";
+                return symbol;
             }
 
             @Override

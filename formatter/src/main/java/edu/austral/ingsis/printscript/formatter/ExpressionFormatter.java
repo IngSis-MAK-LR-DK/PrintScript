@@ -21,7 +21,11 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override
     public String visitStringLiteral(StringLiteralExpression expression) {
-        return "\"" + expression.value() + "\"";
+        String value = expression.value();
+        boolean hasDoubleQuote = value.indexOf('"') != -1;
+        boolean hasSingleQuote = value.indexOf('\'') != -1;
+        char quote = (hasDoubleQuote && !hasSingleQuote) ? '\'' : '"';
+        return quote + value + quote;
     }
 
     @Override

@@ -21,7 +21,16 @@ public final class PrintScriptLexer implements Lexer {
     public PrintScriptLexer(Set<OperatorDefinition> extensionOperators) {
         Map<String, OperatorDefinition> bySymbol = new HashMap<>();
         for (OperatorDefinition operator : extensionOperators) {
-            bySymbol.put(operator.symbol(), operator);
+            OperatorDefinition previous = bySymbol.put(operator.symbol(), operator);
+            if (previous != null) {
+                throw new IllegalArgumentException(
+                        "Two operator plugins both define the symbol '"
+                                + operator.symbol()
+                                + "': "
+                                + previous.getClass().getName()
+                                + " and "
+                                + operator.getClass().getName());
+            }
         }
         this.extensionOperators = Map.copyOf(bySymbol);
     }
