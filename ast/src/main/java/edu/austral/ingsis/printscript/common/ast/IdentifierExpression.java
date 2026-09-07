@@ -7,6 +7,10 @@ public record IdentifierExpression(String name, Position start, Position end)
 
     @Override
     public <R> R accept(ExpressionVisitor<R> visitor) {
-        return visitor.visitIdentifier(this);
+        if (visitor instanceof IdentifierVisitor<R> v) {
+            return v.visitIdentifier(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support IdentifierExpression");
     }
 }

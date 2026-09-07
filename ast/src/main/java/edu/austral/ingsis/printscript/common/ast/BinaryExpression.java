@@ -8,6 +8,10 @@ public record BinaryExpression(
 
     @Override
     public <R> R accept(ExpressionVisitor<R> visitor) {
-        return visitor.visitBinary(this);
+        if (visitor instanceof BinaryVisitor<R> v) {
+            return v.visitBinary(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support BinaryExpression");
     }
 }

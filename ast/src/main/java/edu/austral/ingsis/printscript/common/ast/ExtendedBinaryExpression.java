@@ -16,6 +16,10 @@ public record ExtendedBinaryExpression(
 
     @Override
     public <R> R accept(ExpressionVisitor<R> visitor) {
-        return visitor.visitExtendedBinary(this);
+        if (visitor instanceof ExtendedBinaryVisitor<R> v) {
+            return v.visitExtendedBinary(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support ExtendedBinaryExpression");
     }
 }

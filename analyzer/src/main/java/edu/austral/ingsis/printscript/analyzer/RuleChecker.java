@@ -6,13 +6,15 @@ import java.util.regex.Pattern;
 
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
+import edu.austral.ingsis.printscript.common.ast.AssignmentVisitor;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
-import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
+import edu.austral.ingsis.printscript.common.ast.PrintlnVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
+import edu.austral.ingsis.printscript.common.ast.VariableDeclarationVisitor;
 
 /**
  * Checks a single statement against the configured rules and reports the findings it produces.
@@ -21,7 +23,10 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * AnalyzerConfig}, it always returns the same list and never mutates shared state. The caller
  * ({@link PrintScriptAnalyzer}) is the only place where results get accumulated.
  */
-final class RuleChecker implements StatementVisitor<List<AnalysisFinding>> {
+final class RuleChecker
+        implements VariableDeclarationVisitor<List<AnalysisFinding>>,
+                AssignmentVisitor<List<AnalysisFinding>>,
+                PrintlnVisitor<List<AnalysisFinding>> {
 
     private static final Pattern CAMEL_CASE = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
     private static final Pattern SNAKE_CASE = Pattern.compile("^[a-z][a-z0-9_]*$");

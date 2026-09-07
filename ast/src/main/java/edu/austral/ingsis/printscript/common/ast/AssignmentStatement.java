@@ -9,6 +9,10 @@ public record AssignmentStatement(
 
     @Override
     public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitAssignment(this);
+        if (visitor instanceof AssignmentVisitor<R> v) {
+            return v.visitAssignment(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support AssignmentStatement");
     }
 }
