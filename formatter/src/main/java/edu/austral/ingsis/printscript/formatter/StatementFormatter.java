@@ -1,11 +1,16 @@
 package edu.austral.ingsis.printscript.formatter;
 
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
+import edu.austral.ingsis.printscript.common.ast.AssignmentVisitor;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
-import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
+import edu.austral.ingsis.printscript.common.ast.PrintlnVisitor;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
+import edu.austral.ingsis.printscript.common.ast.VariableDeclarationVisitor;
 
-final class StatementFormatter implements StatementVisitor<String> {
+final class StatementFormatter
+        implements VariableDeclarationVisitor<String>,
+                AssignmentVisitor<String>,
+                PrintlnVisitor<String> {
 
     private final FormatterConfig config;
     private final ExpressionFormatter expressionFormatter = new ExpressionFormatter();

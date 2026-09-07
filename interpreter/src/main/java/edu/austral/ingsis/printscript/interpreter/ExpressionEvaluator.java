@@ -3,13 +3,20 @@ package edu.austral.ingsis.printscript.interpreter;
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
+import edu.austral.ingsis.printscript.common.ast.BinaryVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IdentifierVisitor;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.NumberLiteralVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.StringLiteralVisitor;
 
 /** Walks an expression and computes its runtime value. */
-final class ExpressionEvaluator implements ExpressionVisitor<Object> {
+final class ExpressionEvaluator
+        implements NumberLiteralVisitor<Object>,
+                StringLiteralVisitor<Object>,
+                IdentifierVisitor<Object>,
+                BinaryVisitor<Object> {
 
     private final Environment environment;
 

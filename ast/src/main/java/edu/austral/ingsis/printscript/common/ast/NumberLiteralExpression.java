@@ -7,6 +7,10 @@ public record NumberLiteralExpression(double value, Position start, Position end
 
     @Override
     public <R> R accept(ExpressionVisitor<R> visitor) {
-        return visitor.visitNumberLiteral(this);
+        if (visitor instanceof NumberLiteralVisitor<R> v) {
+            return v.visitNumberLiteral(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support NumberLiteralExpression");
     }
 }

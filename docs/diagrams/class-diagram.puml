@@ -26,9 +26,16 @@ package "common" {
     interface ASTNode
     interface Statement
     interface Expression
-    interface StatementVisitor<R>
-    interface ExpressionVisitor<R>
     enum BinaryOperator
+
+    note right of Statement
+      non-sealed: nuevos statements
+      se agregan implementando la
+      interfaz, sin tocar este archivo.
+    end note
+    note right of Expression
+      non-sealed: mismo motivo.
+    end note
 
     ASTNode <|-- Statement
     ASTNode <|-- Expression
@@ -45,6 +52,31 @@ package "common" {
 
     BinaryExpression --> BinaryOperator : operator
     ExtendedBinaryExpression --> OperatorDefinition : operator
+
+    ' Acyclic Visitor pattern (OCP): un marker vacio por familia, mas una
+    ' interfaz de un solo metodo por tipo de nodo. accept() hace
+    ' "instanceof <TipoVisitor>" y despacha, o tira UnsupportedOperationException.
+    ' Agregar un nodo nuevo = una interfaz nueva; cero cambios en las
+    ' interfaces de abajo ni en sus implementadores existentes.
+    interface StatementVisitor<R>
+    interface VariableDeclarationVisitor<R>
+    interface AssignmentVisitor<R>
+    interface PrintlnVisitor<R>
+    VariableDeclarationVisitor --|> StatementVisitor
+    AssignmentVisitor --|> StatementVisitor
+    PrintlnVisitor --|> StatementVisitor
+
+    interface ExpressionVisitor<R>
+    interface NumberLiteralVisitor<R>
+    interface StringLiteralVisitor<R>
+    interface IdentifierVisitor<R>
+    interface BinaryVisitor<R>
+    interface ExtendedBinaryVisitor<R>
+    NumberLiteralVisitor --|> ExpressionVisitor
+    StringLiteralVisitor --|> ExpressionVisitor
+    IdentifierVisitor --|> ExpressionVisitor
+    BinaryVisitor --|> ExpressionVisitor
+    ExtendedBinaryVisitor --|> ExpressionVisitor
   }
 }
 
@@ -93,8 +125,14 @@ package "interpreter" {
   class ExpressionEvaluator
   class StatementExecutor
   Interpreter <|.. PrintScriptInterpreter
-  StatementExecutor ..|> StatementVisitor
-  ExpressionEvaluator ..|> ExpressionVisitor
+  StatementExecutor ..|> VariableDeclarationVisitor
+  StatementExecutor ..|> AssignmentVisitor
+  StatementExecutor ..|> PrintlnVisitor
+  ExpressionEvaluator ..|> NumberLiteralVisitor
+  ExpressionEvaluator ..|> StringLiteralVisitor
+  ExpressionEvaluator ..|> IdentifierVisitor
+  ExpressionEvaluator ..|> BinaryVisitor
+  ExpressionEvaluator ..|> ExtendedBinaryVisitor
   PrintScriptInterpreter --> Environment
   PrintScriptInterpreter --> StatementExecutor
   StatementExecutor --> ExpressionEvaluator
@@ -111,8 +149,14 @@ package "formatter" {
   Formatter <|.. PrintScriptFormatter
   ConfigLoader <|.. FormatterConfigLoader
   FormatterConfigLoader ..> FormatterConfig : produce
-  StatementFormatter ..|> StatementVisitor
-  ExpressionFormatter ..|> ExpressionVisitor
+  StatementFormatter ..|> VariableDeclarationVisitor
+  StatementFormatter ..|> AssignmentVisitor
+  StatementFormatter ..|> PrintlnVisitor
+  ExpressionFormatter ..|> NumberLiteralVisitor
+  ExpressionFormatter ..|> StringLiteralVisitor
+  ExpressionFormatter ..|> IdentifierVisitor
+  ExpressionFormatter ..|> BinaryVisitor
+  ExpressionFormatter ..|> ExtendedBinaryVisitor
   PrintScriptFormatter --> StatementFormatter
   StatementFormatter --> ExpressionFormatter
   StatementFormatter --> FormatterConfig
@@ -130,7 +174,9 @@ package "analyzer" {
   ConfigLoader <|.. AnalyzerConfigLoader
   AnalyzerConfigLoader ..> AnalyzerConfig : produce
   AnalyzerConfig --> IdentifierCase
-  RuleChecker ..|> StatementVisitor
+  RuleChecker ..|> VariableDeclarationVisitor
+  RuleChecker ..|> AssignmentVisitor
+  RuleChecker ..|> PrintlnVisitor
   RuleChecker --> AnalyzerConfig
   RuleChecker ..> AnalysisFinding : produce
   PrintScriptAnalyzer --> RuleChecker

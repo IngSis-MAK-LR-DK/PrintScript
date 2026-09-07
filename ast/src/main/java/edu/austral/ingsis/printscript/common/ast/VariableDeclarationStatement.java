@@ -15,6 +15,10 @@ public record VariableDeclarationStatement(
 
     @Override
     public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitVariableDeclaration(this);
+        if (visitor instanceof VariableDeclarationVisitor<R> v) {
+            return v.visitVariableDeclaration(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support VariableDeclarationStatement");
     }
 }

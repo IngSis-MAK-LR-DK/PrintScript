@@ -8,6 +8,10 @@ public record PrintlnStatement(Expression argument, Position start, Position end
 
     @Override
     public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitPrintln(this);
+        if (visitor instanceof PrintlnVisitor<R> v) {
+            return v.visitPrintln(this);
+        }
+        throw new UnsupportedOperationException(
+                visitor.getClass().getName() + " does not support PrintlnStatement");
     }
 }
