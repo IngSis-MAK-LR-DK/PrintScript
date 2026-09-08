@@ -3,10 +3,10 @@ package edu.austral.ingsis.printscript.cli;
 import java.io.IOException;
 
 /**
- * One CLI operation (validate, execute, format, analyze).
+ * One CLI operation: validate, execute, format or analyze.
  *
- * @return the process exit code: {@code 0} on success, non-zero if the tool ran fine but found
- *     something to report (e.g. the analyzer finding rule violations).
+ * @return the exit code — 0 on success, nonzero if the tool ran fine but has something to report,
+ *     like the analyzer finding rule violations.
  */
 interface Command {
 

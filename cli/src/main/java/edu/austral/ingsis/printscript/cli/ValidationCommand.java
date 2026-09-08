@@ -8,7 +8,7 @@ import java.util.Iterator;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.interpreter.Interpreter;
 
-/** Runs the interpreter with its output discarded, so only syntax/semantic errors surface. */
+/** Runs the interpreter with its output discarded, so only syntax and semantic errors surface. */
 final class ValidationCommand implements Command {
 
     private final Pipeline pipeline;

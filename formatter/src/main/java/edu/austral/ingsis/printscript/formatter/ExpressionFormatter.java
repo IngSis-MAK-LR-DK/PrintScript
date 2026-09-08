@@ -7,7 +7,7 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
-/** Renders an expression to text. Operators always get a single space on each side (fixed rule). */
+/** Renders an expression to text. Operators always get one space on each side — that's fixed. */
 final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override

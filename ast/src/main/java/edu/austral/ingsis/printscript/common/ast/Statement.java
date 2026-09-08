@@ -1,6 +1,6 @@
 package edu.austral.ingsis.printscript.common.ast;
 
-/** A top-level, semicolon-terminated instruction: declaration, assignment or println call. */
+/** A semicolon-terminated instruction: declaration, assignment or println. */
 public sealed interface Statement extends ASTNode
         permits VariableDeclarationStatement, AssignmentStatement, PrintlnStatement {
 

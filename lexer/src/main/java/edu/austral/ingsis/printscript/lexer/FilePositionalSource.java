@@ -15,7 +15,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.function.LongConsumer;
 
 /**
- * {@link PositionalSource} backed by a real file, read via positional (non-cursor-mutating) I/O.
+ * {@link PositionalSource} backed by a real file, read through positional (non-cursor-moving) I/O.
  */
 public final class FilePositionalSource implements PositionalSource, Closeable {
 
@@ -49,12 +49,11 @@ public final class FilePositionalSource implements PositionalSource, Closeable {
             if (!bytes.hasRemaining()) {
                 return CharRead.endOfInput(offset);
             }
-            // True only if this 4-byte window actually reaches the real end of the file - NOT
-            // just the end of our small scratch buffer. Telling the decoder "this is really all
-            // there will ever be" (endOfInput=true) when we've merely truncated our own window
-            // mid-character makes it report the trailing partial bytes as malformed instead of
-            // "needs more input" - even though the character we actually wanted already decoded
-            // successfully. Only the genuine end of the file may legitimately be malformed.
+            // Only true if this 4-byte window really reaches the end of the file, not just the
+            // end of our small read buffer. If we told the decoder "nothing more is coming"
+            // while we'd merely run out of buffer mid-character, it would report the leftover
+            // bytes as broken instead of "needs more input" — even though the character we
+            // wanted had already decoded fine.
             boolean reachedRealEndOfFile = offset + bytes.limit() >= sizeInBytes;
             CharRead read = decodeFirstCodePoint(bytes, offset, reachedRealEndOfFile);
             onOffsetReached.accept(read.nextOffset());
@@ -66,14 +65,14 @@ public final class FilePositionalSource implements PositionalSource, Closeable {
 
     private CharRead decodeFirstCodePoint(ByteBuffer bytes, long offset, boolean endOfInput)
             throws IOException {
-        // A fresh decoder per call, on purpose: CharsetDecoder is stateful/not thread-safe, and a
-        // shared field would reintroduce exactly the hidden mutable state this class avoids.
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder(); // default action: REPORT
+        // New decoder every call: CharsetDecoder keeps state internally, so a shared field would
+        // just bring back the mutable state this whole class is trying to avoid.
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
         CharBuffer chars = CharBuffer.allocate(1);
         CoderResult result = decoder.decode(bytes, chars, endOfInput);
 
         if (result.isOverflow() && chars.position() == 0) {
-            // One code point that needs two chars (a surrogate pair) - retry with room for both.
+            // Needs two chars — a surrogate pair. Rewind and try again with room for both.
             bytes.rewind();
             decoder.reset();
             chars = CharBuffer.allocate(2);

@@ -8,7 +8,7 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
-/** Evaluates an {@link edu.austral.ingsis.printscript.common.ast.Expression} to a runtime value. */
+/** Walks an expression and computes its runtime value. */
 final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     private final Environment environment;

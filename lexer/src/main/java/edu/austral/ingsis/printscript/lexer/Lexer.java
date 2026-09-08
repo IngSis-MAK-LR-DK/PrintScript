@@ -3,10 +3,9 @@ package edu.austral.ingsis.printscript.lexer;
 import edu.austral.ingsis.printscript.common.TokenStream;
 
 /**
- * Turns PrintScript source code into a stream of tokens.
+ * Turns source code into a stream of tokens.
  *
- * <p>The returned {@link TokenStream} reads from {@code source} lazily, one token at a time, so
- * callers never need to hold an entire (potentially huge) source file in memory.
+ * <p>Tokens come out lazily, one at a time, so the whole file never has to sit in memory at once.
  */
 public interface Lexer {
 

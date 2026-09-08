@@ -11,7 +11,7 @@ import edu.austral.ingsis.printscript.lexer.FilePositionalSource;
 import edu.austral.ingsis.printscript.lexer.Lexer;
 import edu.austral.ingsis.printscript.parser.Parser;
 
-/** Wires source file -> lexer -> parser, reporting progress on the console as it goes. */
+/** Wires a source file to the lexer and parser, printing progress to the console as it goes. */
 final class Pipeline {
 
     private final Lexer lexer;

@@ -6,11 +6,9 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 
 /**
- * A cursor into an immutable {@link TokenStream}. The {@code stream} field is still mutable — but
- * unlike the old design (a buffer over a single-consumption {@code Iterator}), it only ever gets
- * reassigned to point at a new, already-valid immutable value. The node it pointed to before stays
- * untouched and usable; nothing is destructively consumed, so two of these wrapping the same
- * starting stream can advance independently without interfering with each other.
+ * A cursor into an immutable {@link TokenStream}. The stream field is still mutable, it only ever
+ * gets reassigned to point at a new, already-valid immutable value. The node it pointed to before
+ * stays untouched and usable; nothing is destructively consumed.
  */
 final class PeekableTokenStream {
 

@@ -16,10 +16,10 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
 /**
  * Checks a single statement against the configured rules and reports the findings it produces.
- *
- * <p>Every method here is pure: given the same statement and the same (immutable) {@link
- * AnalyzerConfig}, it always returns the same list and never mutates shared state. The caller
- * ({@link PrintScriptAnalyzer}) is the only place where results get accumulated.
+ * <p>
+ * Every method is pure: given the same statement and the same {@link AnalyzerConfig}, it
+ * always returns the same list and never touches shared state. {@link PrintScriptAnalyzer} is the
+ * only place that accumulates results across statements.
  */
 final class RuleChecker implements StatementVisitor<List<AnalysisFinding>> {
 

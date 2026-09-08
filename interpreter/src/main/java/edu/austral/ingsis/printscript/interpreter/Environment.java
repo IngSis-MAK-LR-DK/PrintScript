@@ -6,7 +6,7 @@ import java.util.Map;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
 
-/** Tracks declared variables: their static type and their current runtime value (if any). */
+/** Holds the variables declared so far: each one's type, and its value once it's assigned. */
 final class Environment {
 
     private final Map<String, String> declaredTypes = new HashMap<>();

@@ -17,9 +17,7 @@ public final class PrintScriptParser implements Parser {
         this(Set.of());
     }
 
-    /**
-     * {@code extensionOperators} are contributed by plugin modules discovered via ServiceLoader.
-     */
+    /** {@code extensionOperators} come from plugin modules found through {@code ServiceLoader}. */
     public PrintScriptParser(Set<OperatorDefinition> extensionOperators) {
         Map<String, OperatorDefinition> bySymbol = new HashMap<>();
         for (OperatorDefinition operator : extensionOperators) {

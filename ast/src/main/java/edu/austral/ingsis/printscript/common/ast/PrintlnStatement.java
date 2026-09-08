@@ -2,7 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import edu.austral.ingsis.printscript.common.Position;
 
-/** {@code println(<argument>);} */
+/** {@code println(argument);} */
 public record PrintlnStatement(Expression argument, Position start, Position end)
         implements Statement {
 

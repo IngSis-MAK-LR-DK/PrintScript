@@ -10,9 +10,8 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 
 /**
- * Pure replacement for the old mutable {@code TokenIterator}: every method threads a {@link Cursor}
- * value instead of mutating fields, so scanning the same cursor twice always yields the same
- * result.
+ * Scans one token at a time from a {@link PositionalSource}, threading a {@link Cursor} through
+ * instead of keeping mutable fields on the class.
  */
 final class TokenScanner {
 
@@ -30,7 +29,7 @@ final class TokenScanner {
         Cursor next = result.next();
         return new TokenStream(
                 result.token(),
-                () -> scan(next)); // for EOF, never invoked (see TokenStream.tail())
+                () -> scan(next)); // only called past EOF's own tail, which never happens
     }
 
     private ScanResult scanToken(Cursor cursor) {
