@@ -1,0 +1,2 @@
+let x: string = 'he said "hi" to me';
+println(x);

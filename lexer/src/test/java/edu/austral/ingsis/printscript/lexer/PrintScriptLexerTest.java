@@ -113,7 +113,7 @@ class PrintScriptLexerTest {
 
     @Test
     void recognizesExtensionOperatorsWhenRegistered() {
-        PrintScriptLexer lexerWithPlugin = new PrintScriptLexer(Set.of(stubModuloOperator()));
+        PrintScriptLexer lexerWithPlugin = new PrintScriptLexer(Set.of(stubOperator("%")));
 
         List<Token> tokens = drain(lexerWithPlugin.tokenize(new StringPositionalSource("1 % 2")));
 
@@ -121,11 +121,20 @@ class PrintScriptLexerTest {
         assertEquals("%", tokens.get(1).lexeme());
     }
 
-    private static OperatorDefinition stubModuloOperator() {
+    @Test
+    void throwsWhenTwoOperatorPluginsRegisterTheSameSymbol() {
+        OperatorDefinition first = stubOperator("%");
+        OperatorDefinition second = stubOperator("%");
+
+        assertThrows(
+                IllegalArgumentException.class, () -> new PrintScriptLexer(Set.of(first, second)));
+    }
+
+    private static OperatorDefinition stubOperator(String symbol) {
         return new OperatorDefinition() {
             @Override
             public String symbol() {
-                return "%";
+                return symbol;
             }
 
             @Override

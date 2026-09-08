@@ -65,4 +65,14 @@ class CliArgumentsTest {
                         CliArguments.parse(
                                 new String[] {"execution", "program.prs", "--bogus", "x"}));
     }
+
+    @Test
+    void throwsUnknownArgumentMessageWhenBadFlagIsLastArgument() {
+        CliUsageException exception =
+                assertThrows(
+                        CliUsageException.class,
+                        () -> CliArguments.parse(new String[] {"execution", "program.prs", "foo"}));
+
+        assertTrue(exception.getMessage().contains("Unknown argument"));
+    }
 }
