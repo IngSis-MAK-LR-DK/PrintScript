@@ -1,8 +1,6 @@
 package edu.austral.ingsis.printscript.cli;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.Iterator;
 
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -22,7 +20,7 @@ final class ValidationCommand implements Command {
     @Override
     public int run(CliArguments arguments) throws IOException {
         Iterator<Statement> statements = pipeline.parse(arguments.sourceFile());
-        interpreter.interpret(statements, new PrintStream(OutputStream.nullOutputStream()));
+        interpreter.interpret(statements, line -> {});
         System.out.println("OK: no syntax or semantic errors found");
         return 0;
     }

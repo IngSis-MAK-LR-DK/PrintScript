@@ -3,9 +3,7 @@ package edu.austral.ingsis.printscript.interpreter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,11 +68,9 @@ class PrintScriptInterpreterTest {
     }
 
     private String run(Statement... statements) {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        interpreter.interpret(
-                List.of(statements).iterator(),
-                new PrintStream(buffer, true, StandardCharsets.UTF_8));
-        return buffer.toString(StandardCharsets.UTF_8).replace("\r\n", "\n");
+        List<String> lines = new ArrayList<>();
+        interpreter.interpret(List.of(statements).iterator(), lines::add);
+        return lines.isEmpty() ? "" : String.join("\n", lines) + "\n";
     }
 
     @Test
