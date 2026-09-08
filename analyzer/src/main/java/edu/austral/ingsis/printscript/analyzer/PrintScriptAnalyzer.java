@@ -10,10 +10,13 @@ public final class PrintScriptAnalyzer implements Analyzer {
 
     @Override
     public List<AnalysisFinding> analyze(Iterator<Statement> statements, AnalyzerConfig config) {
-        RuleChecker checker = new RuleChecker(config);
+        List<AnalysisRule> rules = config.toRules();
         List<AnalysisFinding> findings = new ArrayList<>();
         while (statements.hasNext()) {
-            findings.addAll(statements.next().accept(checker));
+            Statement statement = statements.next();
+            for (AnalysisRule rule : rules) {
+                rule.check(statement).ifPresent(findings::add);
+            }
         }
         return findings;
     }
