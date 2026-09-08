@@ -10,9 +10,9 @@ public final class PrintScriptInterpreter implements Interpreter {
     @Override
     public void interpret(Iterator<Statement> statements, PrintStream output) {
         Environment environment = new Environment();
-        StatementExecutor executor = new StatementExecutor(environment, output);
         while (statements.hasNext()) {
-            statements.next().accept(executor);
+            StatementExecutor executor = new StatementExecutor(environment, output);
+            environment = statements.next().accept(executor);
         }
     }
 }

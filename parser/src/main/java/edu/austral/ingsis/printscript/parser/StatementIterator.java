@@ -32,12 +32,12 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * primary     := NUMBER | STRING | IDENTIFIER | "(" expression ")"
  * </pre>
  *
- * {@code expression} isn't split into separate grammar levels for each precedence —
- * an operator's precedence comes from the operator table and is applied dynamically in
- * {@link #parseExpression(TokenStream, int)}, so a new operator changes only that table,
- * never this grammar.
- * <p>
- * Every {@code parseX} method here is pure: it takes the {@link TokenStream} to read from and
+ * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
+ * precedence comes from the operator table and is applied dynamically in {@link
+ * #parseExpression(TokenStream, int)}, so a new operator changes only that table, never this
+ * grammar.
+ *
+ * <p>Every {@code parseX} method here is pure: it takes the {@link TokenStream} to read from and
  * returns a {@link ParseResult} with what it built and the stream that's left over — nothing is
  * mutated along the way. {@link #tokens} is the only mutable state in this class, and it only
  * changes once per call to {@link #next()}, to remember where the previous statement left off.
