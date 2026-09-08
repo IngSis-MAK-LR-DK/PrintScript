@@ -22,10 +22,13 @@ class CoreOperatorsTest {
 
     @Test
     void multiplicationAndDivisionBindTighterThanAdditionAndSubtraction() {
-        assertTrue(CoreOperators.MULTIPLY.precedence() > CoreOperators.PLUS.precedence());
-        assertTrue(CoreOperators.DIVIDE.precedence() > CoreOperators.MINUS.precedence());
-        assertEquals(CoreOperators.MULTIPLY.precedence(), CoreOperators.DIVIDE.precedence());
-        assertEquals(CoreOperators.PLUS.precedence(), CoreOperators.MINUS.precedence());
+        Map<OperatorDefinition, Integer> levels =
+                OperatorPrecedenceResolver.resolveLevels(CoreOperators.all());
+
+        assertTrue(levels.get(CoreOperators.MULTIPLY) > levels.get(CoreOperators.PLUS));
+        assertTrue(levels.get(CoreOperators.DIVIDE) > levels.get(CoreOperators.MINUS));
+        assertEquals(levels.get(CoreOperators.MULTIPLY), levels.get(CoreOperators.DIVIDE));
+        assertEquals(levels.get(CoreOperators.PLUS), levels.get(CoreOperators.MINUS));
     }
 
     @Test
@@ -84,8 +87,8 @@ class CoreOperatorsTest {
             }
 
             @Override
-            public int precedence() {
-                return 2;
+            public OperatorPrecedence precedence() {
+                return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
             }
 
             @Override

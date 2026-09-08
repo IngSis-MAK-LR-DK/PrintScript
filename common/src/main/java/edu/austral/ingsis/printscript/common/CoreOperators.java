@@ -12,10 +12,14 @@ import java.util.function.DoubleBinaryOperator;
  */
 public final class CoreOperators {
 
-    public static final OperatorDefinition PLUS = arithmetic("+", 1, (a, b) -> a + b);
-    public static final OperatorDefinition MINUS = arithmetic("-", 1, (a, b) -> a - b);
-    public static final OperatorDefinition MULTIPLY = arithmetic("*", 2, (a, b) -> a * b);
-    public static final OperatorDefinition DIVIDE = arithmetic("/", 2, (a, b) -> a / b);
+    public static final OperatorDefinition PLUS =
+            arithmetic("+", OperatorPrecedence.root(), (a, b) -> a + b);
+    public static final OperatorDefinition MINUS =
+            arithmetic("-", OperatorPrecedence.root(), (a, b) -> a - b);
+    public static final OperatorDefinition MULTIPLY =
+            arithmetic("*", OperatorPrecedence.higherThan(PLUS, MINUS), (a, b) -> a * b);
+    public static final OperatorDefinition DIVIDE =
+            arithmetic("/", OperatorPrecedence.higherThan(PLUS, MINUS), (a, b) -> a / b);
 
     private CoreOperators() {}
 
@@ -49,7 +53,7 @@ public final class CoreOperators {
     }
 
     private static OperatorDefinition arithmetic(
-            String symbol, int precedence, DoubleBinaryOperator op) {
+            String symbol, OperatorPrecedence precedence, DoubleBinaryOperator op) {
         return new OperatorDefinition() {
             @Override
             public String symbol() {
@@ -57,7 +61,7 @@ public final class CoreOperators {
             }
 
             @Override
-            public int precedence() {
+            public OperatorPrecedence precedence() {
                 return precedence;
             }
 

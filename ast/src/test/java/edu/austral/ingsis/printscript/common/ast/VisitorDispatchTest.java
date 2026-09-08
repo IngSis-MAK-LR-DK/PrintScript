@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Optional;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 import edu.austral.ingsis.printscript.common.Position;
 
 import org.junit.jupiter.api.Test;
@@ -57,8 +59,8 @@ class VisitorDispatchTest {
             }
 
             @Override
-            public int precedence() {
-                return 2;
+            public OperatorPrecedence precedence() {
+                return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
             }
 
             @Override

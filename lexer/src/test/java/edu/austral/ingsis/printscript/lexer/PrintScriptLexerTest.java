@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.LexicalException;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
@@ -138,8 +140,8 @@ class PrintScriptLexerTest {
             }
 
             @Override
-            public int precedence() {
-                return 2;
+            public OperatorPrecedence precedence() {
+                return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
             }
 
             @Override

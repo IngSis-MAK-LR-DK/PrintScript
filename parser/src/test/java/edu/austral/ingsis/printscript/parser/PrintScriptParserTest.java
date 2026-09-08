@@ -12,6 +12,7 @@ import java.util.Set;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
@@ -263,8 +264,8 @@ class PrintScriptParserTest {
             }
 
             @Override
-            public int precedence() {
-                return 2;
+            public OperatorPrecedence precedence() {
+                return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
             }
 
             @Override

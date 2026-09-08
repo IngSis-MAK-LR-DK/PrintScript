@@ -33,9 +33,10 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * </pre>
  *
  * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
- * precedence comes from the operator table and is applied dynamically in {@link
- * #parseExpression(TokenStream, int)}, so a new operator changes only that table, never this
- * grammar.
+ * binding level comes from {@code precedenceLevels} (resolved once, up front, from every installed
+ * operator's relative {@code OperatorPrecedence} constraints — see {@code
+ * OperatorPrecedenceResolver}) and is applied dynamically in {@link #parseExpression(TokenStream,
+ * int)}, so a new operator changes only that table, never this grammar.
  *
  * <p>Every {@code parseX} method here is pure: it takes the {@link TokenStream} to read from and
  * returns a {@link ParseResult} with what it built and the stream that's left over — nothing is
@@ -46,10 +47,15 @@ final class StatementIterator implements Iterator<Statement> {
 
     private TokenStream tokens;
     private final Map<String, OperatorDefinition> operators;
+    private final Map<OperatorDefinition, Integer> precedenceLevels;
 
-    StatementIterator(TokenStream tokens, Map<String, OperatorDefinition> operators) {
+    StatementIterator(
+            TokenStream tokens,
+            Map<String, OperatorDefinition> operators,
+            Map<OperatorDefinition, Integer> precedenceLevels) {
         this.tokens = tokens;
         this.operators = operators;
+        this.precedenceLevels = precedenceLevels;
     }
 
     @Override
@@ -150,10 +156,10 @@ final class StatementIterator implements Iterator<Statement> {
     }
 
     /**
-     * Precedence climbing: consumes operators whose precedence is at least {@code minPrecedence},
-     * recursing with {@code precedence + 1} for the right-hand side so that operators of the same
-     * precedence stay left-associative (each one gets picked up by this loop, not by the recursive
-     * call).
+     * Precedence climbing: consumes operators whose resolved level is at least {@code
+     * minPrecedence}, recursing with {@code level + 1} for the right-hand side so that operators of
+     * the same level stay left-associative (each one gets picked up by this loop, not by the
+     * recursive call).
      */
     private ParseResult<Expression> parseExpression(TokenStream tokens, int minPrecedence) {
         ParseResult<Expression> leftResult = parsePrimary(tokens);
@@ -162,12 +168,12 @@ final class StatementIterator implements Iterator<Statement> {
 
         while (check(rest, TokenType.OPERATOR)) {
             OperatorDefinition operator = operators.get(peek(rest).lexeme());
-            if (operator.precedence() < minPrecedence) {
+            int level = precedenceLevels.get(operator);
+            if (level < minPrecedence) {
                 break;
             }
             ParseResult<Token> operatorToken = advance(rest);
-            ParseResult<Expression> rightResult =
-                    parseExpression(operatorToken.rest(), operator.precedence() + 1);
+            ParseResult<Expression> rightResult = parseExpression(operatorToken.rest(), level + 1);
             left =
                     new BinaryExpression(
                             left,

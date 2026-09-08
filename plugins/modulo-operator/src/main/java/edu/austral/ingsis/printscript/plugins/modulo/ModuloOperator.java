@@ -1,6 +1,8 @@
 package edu.austral.ingsis.printscript.plugins.modulo;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 
 /**
  * Adds the {@code %} operator to PrintScript. Registered through {@code META-INF/services}, so the
@@ -15,8 +17,9 @@ public final class ModuloOperator implements OperatorDefinition {
     }
 
     @Override
-    public int precedence() {
-        return 2; // same precedence as * and /
+    public OperatorPrecedence precedence() {
+        // Same tier as * and / - nothing pins it any higher than that.
+        return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
     }
 
     @Override

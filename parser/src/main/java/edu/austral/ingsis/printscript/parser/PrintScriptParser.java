@@ -6,12 +6,14 @@ import java.util.Set;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedenceResolver;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 
 public final class PrintScriptParser implements Parser {
 
     private final Map<String, OperatorDefinition> operators;
+    private final Map<OperatorDefinition, Integer> precedenceLevels;
 
     public PrintScriptParser() {
         this(Set.of());
@@ -20,10 +22,12 @@ public final class PrintScriptParser implements Parser {
     /** {@code extensionOperators} come from plugin modules found through {@code ServiceLoader}. */
     public PrintScriptParser(Set<OperatorDefinition> extensionOperators) {
         this.operators = CoreOperators.indexBySymbol(extensionOperators);
+        this.precedenceLevels =
+                OperatorPrecedenceResolver.resolveLevels(Set.copyOf(operators.values()));
     }
 
     @Override
     public Iterator<Statement> parse(TokenStream tokens) {
-        return new StatementIterator(tokens, operators);
+        return new StatementIterator(tokens, operators, precedenceLevels);
     }
 }
