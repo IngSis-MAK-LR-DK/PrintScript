@@ -15,6 +15,11 @@ public final class ModuloOperator implements OperatorDefinition {
     }
 
     @Override
+    public int precedence() {
+        return 2; // same precedence as * and /
+    }
+
+    @Override
     public double apply(double left, double right) {
         return left % right;
     }

@@ -117,7 +117,7 @@ class PrintScriptLexerTest {
 
         List<Token> tokens = drain(lexerWithPlugin.tokenize(new StringPositionalSource("1 % 2")));
 
-        assertEquals(TokenType.EXTENSION_OPERATOR, tokens.get(1).type());
+        assertEquals(TokenType.OPERATOR, tokens.get(1).type());
         assertEquals("%", tokens.get(1).lexeme());
     }
 
@@ -126,6 +126,11 @@ class PrintScriptLexerTest {
             @Override
             public String symbol() {
                 return "%";
+            }
+
+            @Override
+            public int precedence() {
+                return 2;
             }
 
             @Override

@@ -9,14 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -49,7 +48,8 @@ class PrintScriptInterpreterTest {
         return new IdentifierExpression(name, P, P);
     }
 
-    private static Expression binary(Expression left, BinaryOperator operator, Expression right) {
+    private static Expression binary(
+            Expression left, OperatorDefinition operator, Expression right) {
         return new BinaryExpression(left, operator, right, P, P);
     }
 
@@ -88,8 +88,8 @@ class PrintScriptInterpreterTest {
                         let("lastName", "string", str("Doe")),
                         println(
                                 binary(
-                                        binary(id("name"), BinaryOperator.PLUS, str(" ")),
-                                        BinaryOperator.PLUS,
+                                        binary(id("name"), CoreOperators.PLUS, str(" ")),
+                                        CoreOperators.PLUS,
                                         id("lastName"))));
 
         assertEquals("Joe Doe\n", output);
@@ -105,8 +105,8 @@ class PrintScriptInterpreterTest {
                 run(
                         let("a", "number", num(12)),
                         let("b", "number", num(4)),
-                        let("c", "number", binary(id("a"), BinaryOperator.DIVIDE, id("b"))),
-                        println(binary(str("Result: "), BinaryOperator.PLUS, id("c"))));
+                        let("c", "number", binary(id("a"), CoreOperators.DIVIDE, id("b"))),
+                        println(binary(str("Result: "), CoreOperators.PLUS, id("c"))));
 
         assertEquals("Result: 3\n", output);
     }
@@ -121,8 +121,8 @@ class PrintScriptInterpreterTest {
                 run(
                         let("a", "number", num(12)),
                         let("b", "number", num(4)),
-                        assign("a", binary(id("a"), BinaryOperator.DIVIDE, id("b"))),
-                        println(binary(str("Result: "), BinaryOperator.PLUS, id("a"))));
+                        assign("a", binary(id("a"), CoreOperators.DIVIDE, id("b"))),
+                        println(binary(str("Result: "), CoreOperators.PLUS, id("a"))));
 
         assertEquals("Result: 3\n", output);
     }
@@ -135,8 +135,8 @@ class PrintScriptInterpreterTest {
                         println(
                                 binary(
                                         num(2),
-                                        BinaryOperator.PLUS,
-                                        binary(num(3), BinaryOperator.MULTIPLY, num(4)))));
+                                        CoreOperators.PLUS,
+                                        binary(num(3), CoreOperators.MULTIPLY, num(4)))));
 
         assertEquals("14\n", output);
     }
@@ -166,7 +166,7 @@ class PrintScriptInterpreterTest {
     void executesAnOperatorContributedByAPlugin() {
         // println(7 % 3);
         OperatorDefinition modulo = stubModuloOperator();
-        Expression modulo7by3 = new ExtendedBinaryExpression(num(7), modulo, num(3), P, P);
+        Expression modulo7by3 = new BinaryExpression(num(7), modulo, num(3), P, P);
 
         String output = run(println(modulo7by3));
 
@@ -178,6 +178,11 @@ class PrintScriptInterpreterTest {
             @Override
             public String symbol() {
                 return "%";
+            }
+
+            @Override
+            public int precedence() {
+                return 2;
             }
 
             @Override

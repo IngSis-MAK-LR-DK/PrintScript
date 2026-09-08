@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
@@ -18,8 +19,6 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -125,7 +124,7 @@ class PrintScriptParserTest {
                         token(TokenType.PRINTLN, "println"),
                         token(TokenType.LEFT_PAREN, "("),
                         token(TokenType.STRING_LITERAL, "Result: "),
-                        token(TokenType.PLUS, "+"),
+                        token(TokenType.OPERATOR, "+"),
                         token(TokenType.IDENTIFIER, "a"),
                         token(TokenType.RIGHT_PAREN, ")"),
                         token(TokenType.SEMICOLON, ";"),
@@ -133,7 +132,7 @@ class PrintScriptParserTest {
 
         var println = assertInstanceOf(PrintlnStatement.class, statements.get(0));
         var concatenation = assertInstanceOf(BinaryExpression.class, println.argument());
-        assertEquals(BinaryOperator.PLUS, concatenation.operator());
+        assertEquals(CoreOperators.PLUS, concatenation.operator());
         assertInstanceOf(StringLiteralExpression.class, concatenation.left());
     }
 
@@ -145,16 +144,16 @@ class PrintScriptParserTest {
                         token(TokenType.IDENTIFIER, "x"),
                         token(TokenType.EQUALS, "="),
                         token(TokenType.NUMBER_LITERAL, "2"),
-                        token(TokenType.PLUS, "+"),
+                        token(TokenType.OPERATOR, "+"),
                         token(TokenType.NUMBER_LITERAL, "3"),
-                        token(TokenType.STAR, "*"),
+                        token(TokenType.OPERATOR, "*"),
                         token(TokenType.NUMBER_LITERAL, "4"),
                         token(TokenType.SEMICOLON, ";"),
                         EOF);
 
         var assignment = assertInstanceOf(AssignmentStatement.class, statements.get(0));
         var addition = assertInstanceOf(BinaryExpression.class, assignment.value());
-        assertEquals(BinaryOperator.PLUS, addition.operator());
+        assertEquals(CoreOperators.PLUS, addition.operator());
         assertInstanceOf(BinaryExpression.class, addition.right());
     }
 
@@ -182,7 +181,7 @@ class PrintScriptParserTest {
                         token(TokenType.PRINTLN, "println"),
                         token(TokenType.LEFT_PAREN, "("),
                         token(TokenType.IDENTIFIER, "a"),
-                        token(TokenType.PLUS, "+"),
+                        token(TokenType.OPERATOR, "+"),
                         token(TokenType.IDENTIFIER, "b"),
                         token(TokenType.RIGHT_PAREN, ")"),
                         token(TokenType.SEMICOLON, ";"),
@@ -234,7 +233,7 @@ class PrintScriptParserTest {
                         token(TokenType.IDENTIFIER, "x"),
                         token(TokenType.EQUALS, "="),
                         token(TokenType.NUMBER_LITERAL, "7"),
-                        token(TokenType.EXTENSION_OPERATOR, "%"),
+                        token(TokenType.OPERATOR, "%"),
                         token(TokenType.NUMBER_LITERAL, "3"),
                         token(TokenType.SEMICOLON, ";"),
                         EOF);
@@ -243,8 +242,8 @@ class PrintScriptParserTest {
         pluggableParser.parse(tokens).forEachRemaining(statements::add);
 
         var assignment = assertInstanceOf(AssignmentStatement.class, statements.get(0));
-        var extended = assertInstanceOf(ExtendedBinaryExpression.class, assignment.value());
-        assertEquals(modulo, extended.operator());
+        var binary = assertInstanceOf(BinaryExpression.class, assignment.value());
+        assertEquals(modulo, binary.operator());
     }
 
     private static OperatorDefinition stubModuloOperator() {
@@ -252,6 +251,11 @@ class PrintScriptParserTest {
             @Override
             public String symbol() {
                 return "%";
+            }
+
+            @Override
+            public int precedence() {
+                return 2;
             }
 
             @Override

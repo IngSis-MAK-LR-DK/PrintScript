@@ -6,13 +6,12 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Optional;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -99,7 +98,7 @@ class PrintScriptFormatterTest {
                         config,
                         assign(
                                 "x",
-                                new BinaryExpression(num(1), BinaryOperator.PLUS, num(2), P, P)));
+                                new BinaryExpression(num(1), CoreOperators.PLUS, num(2), P, P)));
 
         assertEquals("x=1 + 2;\n", result);
     }
@@ -126,9 +125,7 @@ class PrintScriptFormatterTest {
         FormatterConfig config = new FormatterConfig(false, true, true, 0);
 
         String result =
-                format(
-                        config,
-                        assign("x", new ExtendedBinaryExpression(id("a"), modulo, id("b"), P, P)));
+                format(config, assign("x", new BinaryExpression(id("a"), modulo, id("b"), P, P)));
 
         assertEquals("x = a % b;\n", result);
     }
@@ -138,6 +135,11 @@ class PrintScriptFormatterTest {
             @Override
             public String symbol() {
                 return "%";
+            }
+
+            @Override
+            public int precedence() {
+                return 2;
             }
 
             @Override

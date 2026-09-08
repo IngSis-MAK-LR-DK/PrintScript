@@ -7,9 +7,9 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Optional;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -110,7 +110,7 @@ class PrintScriptAnalyzerTest {
                 analyze(
                         config,
                         let("a", "number", num(1)),
-                        println(new BinaryExpression(id("a"), BinaryOperator.PLUS, num(1), P, P)));
+                        println(new BinaryExpression(id("a"), CoreOperators.PLUS, num(1), P, P)));
 
         assertEquals(1, findings.size());
         assertTrue(findings.get(0).message().contains("println"));
@@ -136,7 +136,7 @@ class PrintScriptAnalyzerTest {
                 analyze(
                         config,
                         let("a", "number", num(1)),
-                        println(new BinaryExpression(id("a"), BinaryOperator.PLUS, num(1), P, P)));
+                        println(new BinaryExpression(id("a"), CoreOperators.PLUS, num(1), P, P)));
 
         assertTrue(findings.isEmpty());
     }

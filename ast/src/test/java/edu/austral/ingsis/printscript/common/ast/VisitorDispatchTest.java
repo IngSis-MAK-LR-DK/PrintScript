@@ -18,9 +18,7 @@ class VisitorDispatchTest {
         Expression number = new NumberLiteralExpression(1, P, P);
         Expression string = new StringLiteralExpression("a", P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
-        Expression binary = new BinaryExpression(number, BinaryOperator.PLUS, number, P, P);
-        Expression extendedBinary =
-                new ExtendedBinaryExpression(number, stubOperator(), number, P, P);
+        Expression binary = new BinaryExpression(number, stubOperator(), number, P, P);
 
         ExpressionVisitor<String> visitor =
                 new ExpressionVisitor<>() {
@@ -43,18 +41,12 @@ class VisitorDispatchTest {
                     public String visitBinary(BinaryExpression expression) {
                         return "binary";
                     }
-
-                    @Override
-                    public String visitExtendedBinary(ExtendedBinaryExpression expression) {
-                        return "extendedBinary";
-                    }
                 };
 
         assertEquals("number", number.accept(visitor));
         assertEquals("string", string.accept(visitor));
         assertEquals("identifier", identifier.accept(visitor));
         assertEquals("binary", binary.accept(visitor));
-        assertEquals("extendedBinary", extendedBinary.accept(visitor));
     }
 
     private static OperatorDefinition stubOperator() {
@@ -62,6 +54,11 @@ class VisitorDispatchTest {
             @Override
             public String symbol() {
                 return "%";
+            }
+
+            @Override
+            public int precedence() {
+                return 2;
             }
 
             @Override

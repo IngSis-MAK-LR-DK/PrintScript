@@ -5,8 +5,7 @@ public sealed interface Expression extends ASTNode
         permits NumberLiteralExpression,
                 StringLiteralExpression,
                 IdentifierExpression,
-                BinaryExpression,
-                ExtendedBinaryExpression {
+                BinaryExpression {
 
     <R> R accept(ExpressionVisitor<R> visitor);
 }

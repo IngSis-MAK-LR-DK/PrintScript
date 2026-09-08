@@ -2,7 +2,6 @@ package edu.austral.ingsis.printscript.formatter;
 
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -31,22 +30,6 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override
     public String visitBinary(BinaryExpression expression) {
-        String operator =
-                switch (expression.operator()) {
-                    case PLUS -> "+";
-                    case MINUS -> "-";
-                    case MULTIPLY -> "*";
-                    case DIVIDE -> "/";
-                };
-        return expression.left().accept(this)
-                + " "
-                + operator
-                + " "
-                + expression.right().accept(this);
-    }
-
-    @Override
-    public String visitExtendedBinary(ExtendedBinaryExpression expression) {
         return expression.left().accept(this)
                 + " "
                 + expression.operator().symbol()

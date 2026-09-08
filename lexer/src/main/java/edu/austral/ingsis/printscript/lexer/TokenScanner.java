@@ -16,11 +16,11 @@ import edu.austral.ingsis.printscript.common.TokenType;
 final class TokenScanner {
 
     private final PositionalSource source;
-    private final Map<String, OperatorDefinition> extensionOperators;
+    private final Map<String, OperatorDefinition> operators;
 
-    TokenScanner(PositionalSource source, Map<String, OperatorDefinition> extensionOperators) {
+    TokenScanner(PositionalSource source, Map<String, OperatorDefinition> operators) {
         this.source = source;
-        this.extensionOperators = extensionOperators;
+        this.operators = operators;
     }
 
     TokenStream scan(Cursor cursor) {
@@ -57,10 +57,9 @@ final class TokenScanner {
                     after);
         }
         String symbolText = codePointToString(c.codePoint());
-        if (extensionOperators.containsKey(symbolText)) {
+        if (operators.containsKey(symbolText)) {
             return new ScanResult(
-                    new Token(TokenType.EXTENSION_OPERATOR, symbolText, start, after.position()),
-                    after);
+                    new Token(TokenType.OPERATOR, symbolText, start, after.position()), after);
         }
         throw new LexicalException(
                 "Unexpected character '" + symbolText + "'", start, after.position());
@@ -138,10 +137,6 @@ final class TokenScanner {
             case ':' -> TokenType.COLON;
             case '=' -> TokenType.EQUALS;
             case ';' -> TokenType.SEMICOLON;
-            case '+' -> TokenType.PLUS;
-            case '-' -> TokenType.MINUS;
-            case '*' -> TokenType.STAR;
-            case '/' -> TokenType.SLASH;
             case '(' -> TokenType.LEFT_PAREN;
             case ')' -> TokenType.RIGHT_PAREN;
             default -> null;

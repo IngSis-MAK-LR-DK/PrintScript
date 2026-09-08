@@ -12,9 +12,7 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -30,19 +28,23 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * declaration := "let" IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
- * expression  := term (("+" | "-") term)*
- * term        := primary (("*" | "/") primary)*
+ * expression  := primary (OPERATOR primary)*
  * primary     := NUMBER | STRING | IDENTIFIER | "(" expression ")"
  * </pre>
+ *
+ * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
+ * precedence comes from the operator table ({@code operators}, core operators plus whatever a
+ * plugin contributes) and is applied dynamically in {@link #parseExpression(int)}, so a new
+ * operator changes only that table, never this grammar.
  */
 final class StatementIterator implements Iterator<Statement> {
 
     private final PeekableTokenStream stream;
-    private final Map<String, OperatorDefinition> extensionOperators;
+    private final Map<String, OperatorDefinition> operators;
 
-    StatementIterator(TokenStream tokens, Map<String, OperatorDefinition> extensionOperators) {
+    StatementIterator(TokenStream tokens, Map<String, OperatorDefinition> operators) {
         this.stream = new PeekableTokenStream(tokens);
-        this.extensionOperators = extensionOperators;
+        this.operators = operators;
     }
 
     @Override
@@ -107,42 +109,25 @@ final class StatementIterator implements Iterator<Statement> {
     }
 
     private Expression parseExpression() {
-        return parseAdditive();
+        return parseExpression(0);
     }
 
-    private Expression parseAdditive() {
-        Expression left = parseMultiplicative();
-        while (stream.check(TokenType.PLUS) || stream.check(TokenType.MINUS)) {
-            Token operatorToken = stream.advance();
-            Expression right = parseMultiplicative();
-            BinaryOperator operator =
-                    operatorToken.type() == TokenType.PLUS
-                            ? BinaryOperator.PLUS
-                            : BinaryOperator.MINUS;
-            left = new BinaryExpression(left, operator, right, left.start(), right.end());
-        }
-        return left;
-    }
-
-    private Expression parseMultiplicative() {
+    /**
+     * Precedence climbing: consumes operators whose precedence is at least {@code minPrecedence},
+     * recursing with {@code precedence + 1} for the right-hand side so that operators of the same
+     * precedence stay left-associative (each one gets picked up by this loop, not by the recursive
+     * call).
+     */
+    private Expression parseExpression(int minPrecedence) {
         Expression left = parsePrimary();
-        while (stream.check(TokenType.STAR)
-                || stream.check(TokenType.SLASH)
-                || stream.check(TokenType.EXTENSION_OPERATOR)) {
-            Token operatorToken = stream.advance();
-            Expression right = parsePrimary();
-            if (operatorToken.type() == TokenType.EXTENSION_OPERATOR) {
-                OperatorDefinition operator = extensionOperators.get(operatorToken.lexeme());
-                left =
-                        new ExtendedBinaryExpression(
-                                left, operator, right, left.start(), right.end());
-            } else {
-                BinaryOperator operator =
-                        operatorToken.type() == TokenType.STAR
-                                ? BinaryOperator.MULTIPLY
-                                : BinaryOperator.DIVIDE;
-                left = new BinaryExpression(left, operator, right, left.start(), right.end());
+        while (stream.check(TokenType.OPERATOR)) {
+            OperatorDefinition operator = operators.get(stream.peek().lexeme());
+            if (operator.precedence() < minPrecedence) {
+                break;
             }
+            stream.advance();
+            Expression right = parseExpression(operator.precedence() + 1);
+            left = new BinaryExpression(left, operator, right, left.start(), right.end());
         }
         return left;
     }
