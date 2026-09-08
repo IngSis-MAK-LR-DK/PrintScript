@@ -1,6 +1,5 @@
 package edu.austral.ingsis.printscript.interpreter;
 
-import java.io.PrintStream;
 import java.util.Iterator;
 
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -8,10 +7,10 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
 public final class PrintScriptInterpreter implements Interpreter {
 
     @Override
-    public void interpret(Iterator<Statement> statements, PrintStream output) {
+    public void interpret(Iterator<Statement> statements, Emitter emitter) {
         Environment environment = new Environment();
         while (statements.hasNext()) {
-            StatementExecutor executor = new StatementExecutor(environment, output);
+            StatementExecutor executor = new StatementExecutor(environment, emitter);
             environment = statements.next().accept(executor);
         }
     }

@@ -19,7 +19,7 @@ final class ExecutionCommand implements Command {
     @Override
     public int run(CliArguments arguments) throws IOException {
         Iterator<Statement> statements = pipeline.parse(arguments.sourceFile());
-        interpreter.interpret(statements, System.out);
+        interpreter.interpret(statements, System.out::println);
         return 0;
     }
 }
