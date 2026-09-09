@@ -10,6 +10,7 @@ participant "Pipeline" as Pipeline
 participant "Lexer\n(PrintScriptLexer)" as Lexer
 participant "Parser\n(PrintScriptParser)" as Parser
 participant "Interpreter\n(PrintScriptInterpreter)" as Interp
+participant "Emitter\n(System.out::println)" as Emitter
 
 Usuario -> Main: main(args)
 activate Main
@@ -43,20 +44,16 @@ Parser --> Pipeline: Iterator<Statement> (lazy)
 Pipeline --> Cmd: Iterator<Statement> (con progreso;\ncierra FilePositionalSource al agotarse)
 deactivate Pipeline
 
-Cmd -> Interp: interpret(statements, System.out)
+Cmd -> Interp: interpret(statements, emitter)\n(emitter: System.out::println en ExecutionCommand,\nline -> {} en ValidationCommand)
 activate Interp
 
 loop mientras statements.hasNext()
   Interp -> Parser: statements.next()
   activate Parser
   note right of Parser
-    PeekableTokenStream reasigna su
-    cursor (stream = stream.tail())
-    hasta completar UN statement.
-    Nunca destruye el TokenStream
-    anterior, solo deja de apuntarlo.
+    StatementIterator reasigna su propio\ncampo tokens (via ParseResult) una\nvez por statement completo. Ningún\nparseX muta nada - cada uno devuelve\n(nodo, TokenStream restante) puro.
   end note
-  Parser -> Lexer: stream.tail() (una o más veces)
+  Parser -> Lexer: tokens.tail() (una o más veces)
   activate Lexer
   note right of Lexer
     TokenScanner lee code points por
@@ -69,8 +66,8 @@ loop mientras statements.hasNext()
   Parser --> Interp: Statement
   deactivate Parser
 
-  Interp -> Interp: statement.accept(StatementExecutor)
-  Interp -> "System.out": println(valor) (si es PrintlnStatement)
+  Interp -> Interp: environment = statement.accept(StatementExecutor)\n(Environment inmutable: devuelve uno nuevo,\nse enhebra hacia el próximo statement)
+  Interp -> Emitter: emit(valor) (si es PrintlnStatement)
 end
 
 deactivate Interp

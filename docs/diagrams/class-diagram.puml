@@ -9,12 +9,27 @@ package "common" {
   enum ConfigFormat
   interface "ConfigLoader<T>" as ConfigLoader
   interface OperatorDefinition
+  class CoreOperators
+  class OperatorPrecedence
+  class OperatorPrecedenceResolver
 
   Token --> TokenType
   Token --> Position
   TokenStream --> Token : head()
   TokenStream ..> TokenStream : tail()\n(cons-list inmutable, sin memoizar)
   ConfigLoader ..> ConfigFormat : load(Reader, format)
+
+  OperatorDefinition --> OperatorPrecedence : precedence()
+  CoreOperators ..> OperatorDefinition : PLUS/MINUS/MULTIPLY/DIVIDE
+  OperatorPrecedenceResolver ..> OperatorPrecedence : resuelve niveles
+  note right of OperatorPrecedenceResolver
+    Recalcula el grafo completo de
+    restricciones (core + plugins)
+    cada vez - nunca parchea una
+    numeracion fija, asi nunca se
+    queda sin lugar para insertar
+    un operador entre dos existentes.
+  end note
 
   abstract class PrintScriptException
   PrintScriptException <|-- LexicalException
@@ -26,7 +41,6 @@ package "common" {
     interface ASTNode
     interface Statement
     interface Expression
-    enum BinaryOperator
 
     note right of Statement
       non-sealed: nuevos statements
@@ -48,10 +62,8 @@ package "common" {
     Expression <|.. StringLiteralExpression
     Expression <|.. IdentifierExpression
     Expression <|.. BinaryExpression
-    Expression <|.. ExtendedBinaryExpression
 
-    BinaryExpression --> BinaryOperator : operator
-    ExtendedBinaryExpression --> OperatorDefinition : operator
+    BinaryExpression --> OperatorDefinition : operator\n(core o de plugin, sin distincion)
 
     ' Acyclic Visitor pattern (OCP): un marker vacio por familia, mas una
     ' interfaz de un solo metodo por tipo de nodo. accept() hace
@@ -71,12 +83,10 @@ package "common" {
     interface StringLiteralVisitor<R>
     interface IdentifierVisitor<R>
     interface BinaryVisitor<R>
-    interface ExtendedBinaryVisitor<R>
     NumberLiteralVisitor --|> ExpressionVisitor
     StringLiteralVisitor --|> ExpressionVisitor
     IdentifierVisitor --|> ExpressionVisitor
     BinaryVisitor --|> ExpressionVisitor
-    ExtendedBinaryVisitor --|> ExpressionVisitor
   }
 }
 
@@ -110,12 +120,18 @@ package "parser" {
   interface Parser
   class PrintScriptParser
   class StatementIterator
-  class PeekableTokenStream
+  class "ParseResult<T>" as ParseResult
   Parser <|.. PrintScriptParser
   PrintScriptParser ..> StatementIterator : crea
-  StatementIterator --> PeekableTokenStream
-  PeekableTokenStream --> TokenStream : cursor\n(reasignado, nunca destructivo)
-  StatementIterator ..> OperatorDefinition : arma ExtendedBinaryExpression
+  PrintScriptParser ..> OperatorPrecedenceResolver : resuelve niveles\nuna sola vez
+  StatementIterator ..> ParseResult : cada parseX devuelve\n(nodo, TokenStream restante)
+  note right of StatementIterator
+    Puro: ningun parseX muta nada,
+    solo el campo tokens del propio
+    StatementIterator se reasigna
+    una vez por cada next().
+  end note
+  StatementIterator ..> OperatorDefinition : arma BinaryExpression
 }
 
 package "interpreter" {
@@ -124,7 +140,9 @@ package "interpreter" {
   class Environment
   class ExpressionEvaluator
   class StatementExecutor
+  interface Emitter
   Interpreter <|.. PrintScriptInterpreter
+  Interpreter ..> Emitter : interpret(statements, emitter)
   StatementExecutor ..|> VariableDeclarationVisitor
   StatementExecutor ..|> AssignmentVisitor
   StatementExecutor ..|> PrintlnVisitor
@@ -132,11 +150,22 @@ package "interpreter" {
   ExpressionEvaluator ..|> StringLiteralVisitor
   ExpressionEvaluator ..|> IdentifierVisitor
   ExpressionEvaluator ..|> BinaryVisitor
-  ExpressionEvaluator ..|> ExtendedBinaryVisitor
   PrintScriptInterpreter --> Environment
   PrintScriptInterpreter --> StatementExecutor
   StatementExecutor --> ExpressionEvaluator
+  StatementExecutor --> Emitter
   ExpressionEvaluator --> Environment
+  note right of Environment
+    Inmutable: declare()/assign()
+    devuelven un Environment nuevo,
+    no mutan el receptor.
+  end note
+  note right of StatementExecutor
+    visitXxx devuelve el Environment
+    resultante (no Void) - el llamador
+    (PrintScriptInterpreter) lo enhebra
+    entre statements.
+  end note
 }
 
 package "formatter" {
@@ -156,7 +185,6 @@ package "formatter" {
   ExpressionFormatter ..|> StringLiteralVisitor
   ExpressionFormatter ..|> IdentifierVisitor
   ExpressionFormatter ..|> BinaryVisitor
-  ExpressionFormatter ..|> ExtendedBinaryVisitor
   PrintScriptFormatter --> StatementFormatter
   StatementFormatter --> ExpressionFormatter
   StatementFormatter --> FormatterConfig
@@ -165,7 +193,9 @@ package "formatter" {
 package "analyzer" {
   interface Analyzer
   class PrintScriptAnalyzer
-  class RuleChecker
+  interface AnalysisRule
+  class IdentifierCaseRule
+  class PrintlnArgumentRule
   class AnalyzerConfig << record >>
   class AnalyzerConfigLoader
   class AnalysisFinding << record >>
@@ -174,12 +204,18 @@ package "analyzer" {
   ConfigLoader <|.. AnalyzerConfigLoader
   AnalyzerConfigLoader ..> AnalyzerConfig : produce
   AnalyzerConfig --> IdentifierCase
-  RuleChecker ..|> VariableDeclarationVisitor
-  RuleChecker ..|> AssignmentVisitor
-  RuleChecker ..|> PrintlnVisitor
-  RuleChecker --> AnalyzerConfig
-  RuleChecker ..> AnalysisFinding : produce
-  PrintScriptAnalyzer --> RuleChecker
+  AnalyzerConfig ..> AnalysisRule : toRules()
+  AnalysisRule <|.. IdentifierCaseRule
+  AnalysisRule <|.. PrintlnArgumentRule
+  AnalysisRule ..> AnalysisFinding : produce
+  PrintScriptAnalyzer ..> AnalysisRule : itera la lista activa
+  note right of AnalysisRule
+    Reemplaza al viejo RuleChecker
+    (StatementVisitor): cada regla es
+    un objeto independiente con su
+    propio check(Statement) - agregar
+    una regla nueva no toca las demas.
+  end note
 }
 
 package "plugins.modulo-operator" {
@@ -188,7 +224,9 @@ package "plugins.modulo-operator" {
   note right of ModuloOperator
     Registrado en
     META-INF/services/...OperatorDefinition
-    (solo depende de "common")
+    (solo depende de "common").
+    precedence() = higherThan(PLUS, MINUS)
+    - misma altura que * y /.
   end note
 }
 
@@ -224,8 +262,10 @@ package "cli" {
 
   ValidationCommand --> Pipeline
   ValidationCommand --> Interpreter
+  ValidationCommand ..> Emitter : line -> {} (descarta la salida)
   ExecutionCommand --> Pipeline
   ExecutionCommand --> Interpreter
+  ExecutionCommand ..> Emitter : System.out::println
   FormattingCommand --> Pipeline
   FormattingCommand --> Formatter
   FormattingCommand --> ConfigLoader
