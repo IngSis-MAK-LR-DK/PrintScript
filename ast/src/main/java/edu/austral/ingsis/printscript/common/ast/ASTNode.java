@@ -2,7 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import edu.austral.ingsis.printscript.common.Position;
 
-/** Common contract for every node of the PrintScript AST. */
+/** Base type for every node in the AST — statements and expressions both carry a position. */
 public sealed interface ASTNode permits Statement, Expression {
 
     Position start();

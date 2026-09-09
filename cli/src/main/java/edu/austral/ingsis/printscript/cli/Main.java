@@ -17,11 +17,10 @@ import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
 import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 
 /**
- * CLI entry point and composition root: this is the only place where concrete implementations of
- * {@code Lexer}, {@code Parser}, {@code Interpreter}, {@code Formatter} and {@code Analyzer} get
- * instantiated. Everything downstream ({@link Pipeline}, the {@link Command} implementations) only
- * ever sees their interfaces. It is also the only place that calls {@link ServiceLoader} to
- * discover operator plugins — the core modules never know which plugins, if any, are present.
+ * Entry point and composition root — the only place that builds concrete {@code Lexer}, {@code
+ * Parser}, {@code Interpreter}, {@code Formatter} and {@code Analyzer} instances. Everything else
+ * in the CLI only ever sees their interfaces. It's also the only place that touches {@link
+ * ServiceLoader} to discover operator plugins.
  */
 public final class Main {
 
@@ -33,9 +32,8 @@ public final class Main {
     }
 
     /**
-     * Does everything {@link #main} does except actually terminate the process, so tests can drive
-     * every error branch (including the ones a real run would exit(2)/exit(1) for) without killing
-     * the test JVM.
+     * Same as {@link #main}, but never calls {@code System.exit}, so tests can trigger every error
+     * branch without killing the test JVM.
      */
     static int run(String[] args) {
         try {

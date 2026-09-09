@@ -1,6 +1,6 @@
 package edu.austral.ingsis.printscript.config;
 
-/** File format used for formatter/analyzer rule configuration files. */
+/** Which format a config file is written in — the formatter and analyzer both read either. */
 public enum ConfigFormat {
     YAML,
     JSON

@@ -6,29 +6,47 @@ import java.util.Map;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
 
-/** Tracks declared variables: their static type and their current runtime value (if any). */
+/**
+ * Holds the variables declared so far: each one's type, and its value once it's assigned.
+ *
+ * <p>Immutable: {@link #declare} and {@link #assign} don't change this instance, they return a new
+ * one with the extra binding.
+ */
 final class Environment {
 
-    private final Map<String, String> declaredTypes = new HashMap<>();
-    private final Map<String, Object> values = new HashMap<>();
+    private final Map<String, String> declaredTypes;
+    private final Map<String, Object> values;
 
-    void declare(String name, String type, Position at) {
+    Environment() {
+        this(Map.of(), Map.of());
+    }
+
+    private Environment(Map<String, String> declaredTypes, Map<String, Object> values) {
+        this.declaredTypes = declaredTypes;
+        this.values = values;
+    }
+
+    Environment declare(String name, String type, Position at) {
         if (declaredTypes.containsKey(name)) {
             throw new SemanticException("Variable '" + name + "' is already declared", at, at);
         }
         if (!type.equals("number") && !type.equals("string")) {
             throw new SemanticException("Unknown type '" + type + "'", at, at);
         }
-        declaredTypes.put(name, type);
+        Map<String, String> updatedTypes = new HashMap<>(declaredTypes);
+        updatedTypes.put(name, type);
+        return new Environment(Map.copyOf(updatedTypes), values);
     }
 
-    void assign(String name, Object value, Position at) {
+    Environment assign(String name, Object value, Position at) {
         String type = declaredTypes.get(name);
         if (type == null) {
             throw new SemanticException("Variable '" + name + "' is not declared", at, at);
         }
         requireMatchingType(name, type, value, at);
-        values.put(name, value);
+        Map<String, Object> updatedValues = new HashMap<>(values);
+        updatedValues.put(name, value);
+        return new Environment(declaredTypes, Map.copyOf(updatedValues));
     }
 
     Object read(String name, Position at) {

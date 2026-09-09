@@ -1,14 +1,14 @@
 package edu.austral.ingsis.printscript.interpreter;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
-/** Evaluates an {@link edu.austral.ingsis.printscript.common.ast.Expression} to a runtime value. */
+/** Walks an expression and computes its runtime value. */
 final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     private final Environment environment;
@@ -37,18 +37,13 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
         Object left = expression.left().accept(this);
         Object right = expression.right().accept(this);
 
-        return switch (expression.operator()) {
-            case PLUS -> add(left, right, expression);
-            case MINUS -> arithmetic(left, right, expression, (a, b) -> a - b);
-            case MULTIPLY -> arithmetic(left, right, expression, (a, b) -> a * b);
-            case DIVIDE -> arithmetic(left, right, expression, (a, b) -> a / b);
-        };
-    }
-
-    @Override
-    public Object visitExtendedBinary(ExtendedBinaryExpression expression) {
-        Object left = expression.left().accept(this);
-        Object right = expression.right().accept(this);
+        // '+' also concatenates strings — an overload the OperatorDefinition#apply(double, double)
+        // contract can't express (it's number-only), so it's handled here rather than inside
+        // CoreOperators.PLUS itself. Every other operator, core or plugin, is number-only.
+        if (expression.operator() == CoreOperators.PLUS
+                && (left instanceof String || right instanceof String)) {
+            return stringify(left) + stringify(right);
+        }
         if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
             return expression.operator().apply(leftNumber, rightNumber);
         }
@@ -56,31 +51,6 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
                 "Operator '"
                         + expression.operator().symbol()
                         + "' requires operands of type number",
-                expression.start(),
-                expression.end());
-    }
-
-    private Object add(Object left, Object right, BinaryExpression expression) {
-        if (left instanceof String || right instanceof String) {
-            return stringify(left) + stringify(right);
-        }
-        if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
-            return leftNumber + rightNumber;
-        }
-        throw typeError(expression);
-    }
-
-    private Object arithmetic(
-            Object left, Object right, BinaryExpression expression, DoubleBinaryOp op) {
-        if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
-            return op.apply(leftNumber, rightNumber);
-        }
-        throw typeError(expression);
-    }
-
-    private SemanticException typeError(BinaryExpression expression) {
-        return new SemanticException(
-                "Arithmetic operators require 'number' operands",
                 expression.start(),
                 expression.end());
     }
@@ -93,10 +63,5 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
             return String.valueOf(number);
         }
         return String.valueOf(value);
-    }
-
-    @FunctionalInterface
-    private interface DoubleBinaryOp {
-        double apply(double a, double b);
     }
 }

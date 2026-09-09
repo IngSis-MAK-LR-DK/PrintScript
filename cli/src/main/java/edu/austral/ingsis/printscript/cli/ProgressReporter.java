@@ -1,12 +1,11 @@
 package edu.austral.ingsis.printscript.cli;
 
 /**
- * Prints parsing progress to the console as an approximate percentage of the file consumed.
+ * Prints parsing progress as a rough percentage of the file read so far.
  *
- * <p>Tracks a high-water mark, not a running sum: the lexer's own {@code peek}/{@code advance}
- * pattern re-reads the same byte offset more than once, so summing every reported delta would
- * overcount and pin the bar at 100% early. Taking the highest offset reached is exact regardless of
- * how many times any given position gets re-read.
+ * <p>Keeps the highest offset seen rather than a running total. The lexer peeks ahead and sometimes
+ * re-reads the same offset, so adding up every callback would overcount and hit 100% before the
+ * file is actually done.
  */
 final class ProgressReporter {
 

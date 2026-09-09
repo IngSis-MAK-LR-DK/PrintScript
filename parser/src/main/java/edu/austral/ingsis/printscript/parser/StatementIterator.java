@@ -12,9 +12,7 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
-import edu.austral.ingsis.printscript.common.ast.BinaryOperator;
 import edu.austral.ingsis.printscript.common.ast.Expression;
-import edu.austral.ingsis.printscript.common.ast.ExtendedBinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -30,24 +28,39 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * declaration := "let" IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
- * expression  := term (("+" | "-") term)*
- * term        := primary (("*" | "/") primary)*
+ * expression  := primary (OPERATOR primary)*
  * primary     := NUMBER | STRING | IDENTIFIER | "(" expression ")"
  * </pre>
+ *
+ * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
+ * binding level comes from {@code precedenceLevels} (resolved once, up front, from every installed
+ * operator's relative {@code OperatorPrecedence} constraints — see {@code
+ * OperatorPrecedenceResolver}) and is applied dynamically in {@link #parseExpression(TokenStream,
+ * int)}, so a new operator changes only that table, never this grammar.
+ *
+ * <p>Every {@code parseX} method here is pure: it takes the {@link TokenStream} to read from and
+ * returns a {@link ParseResult} with what it built and the stream that's left over — nothing is
+ * mutated along the way. {@link #tokens} is the only mutable state in this class, and it only
+ * changes once per call to {@link #next()}, to remember where the previous statement left off.
  */
 final class StatementIterator implements Iterator<Statement> {
 
-    private final PeekableTokenStream stream;
-    private final Map<String, OperatorDefinition> extensionOperators;
+    private TokenStream tokens;
+    private final Map<String, OperatorDefinition> operators;
+    private final Map<OperatorDefinition, Integer> precedenceLevels;
 
-    StatementIterator(TokenStream tokens, Map<String, OperatorDefinition> extensionOperators) {
-        this.stream = new PeekableTokenStream(tokens);
-        this.extensionOperators = extensionOperators;
+    StatementIterator(
+            TokenStream tokens,
+            Map<String, OperatorDefinition> operators,
+            Map<OperatorDefinition, Integer> precedenceLevels) {
+        this.tokens = tokens;
+        this.operators = operators;
+        this.precedenceLevels = precedenceLevels;
     }
 
     @Override
     public boolean hasNext() {
-        return !stream.check(TokenType.EOF);
+        return !check(tokens, TokenType.EOF);
     }
 
     @Override
@@ -55,15 +68,17 @@ final class StatementIterator implements Iterator<Statement> {
         if (!hasNext()) {
             throw new NoSuchElementException("No more statements");
         }
-        return parseStatement();
+        ParseResult<Statement> result = parseStatement(tokens);
+        tokens = result.rest();
+        return result.node();
     }
 
-    private Statement parseStatement() {
-        Token current = stream.peek();
+    private ParseResult<Statement> parseStatement(TokenStream tokens) {
+        Token current = peek(tokens);
         return switch (current.type()) {
-            case LET -> parseVariableDeclaration();
-            case PRINTLN -> parsePrintln();
-            case IDENTIFIER -> parseAssignment();
+            case LET -> parseVariableDeclaration(tokens);
+            case PRINTLN -> parsePrintln(tokens);
+            case IDENTIFIER -> parseAssignment(tokens);
             default ->
                     throw new SyntaxException(
                             "Expected a statement but found '" + current.lexeme() + "'",
@@ -72,104 +87,168 @@ final class StatementIterator implements Iterator<Statement> {
         };
     }
 
-    private Statement parseVariableDeclaration() {
-        Token letToken = stream.expect(TokenType.LET, "Expected 'let'");
-        Token name = stream.expect(TokenType.IDENTIFIER, "Expected a variable name");
-        stream.expect(TokenType.COLON, "Expected ':' after variable name");
-        Token type = stream.expect(TokenType.IDENTIFIER, "Expected a type name");
+    private ParseResult<Statement> parseVariableDeclaration(TokenStream tokens) {
+        ParseResult<Token> let = expect(tokens, TokenType.LET, "Expected 'let'");
+        ParseResult<Token> name =
+                expect(let.rest(), TokenType.IDENTIFIER, "Expected a variable name");
+        ParseResult<Token> colon =
+                expect(name.rest(), TokenType.COLON, "Expected ':' after variable name");
+        ParseResult<Token> type =
+                expect(colon.rest(), TokenType.IDENTIFIER, "Expected a type name");
 
+        TokenStream rest = type.rest();
         Optional<Expression> initializer = Optional.empty();
-        if (stream.check(TokenType.EQUALS)) {
-            stream.advance();
-            initializer = Optional.of(parseExpression());
+        if (check(rest, TokenType.EQUALS)) {
+            ParseResult<Token> equals = advance(rest);
+            ParseResult<Expression> value = parseExpression(equals.rest());
+            initializer = Optional.of(value.node());
+            rest = value.rest();
         }
 
-        Token semicolon = stream.expect(TokenType.SEMICOLON, "Expected ';' after declaration");
-        return new VariableDeclarationStatement(
-                name.lexeme(), type.lexeme(), initializer, letToken.start(), semicolon.end());
+        ParseResult<Token> semicolon =
+                expect(rest, TokenType.SEMICOLON, "Expected ';' after declaration");
+        Statement declaration =
+                new VariableDeclarationStatement(
+                        name.node().lexeme(),
+                        type.node().lexeme(),
+                        initializer,
+                        let.node().start(),
+                        semicolon.node().end());
+        return new ParseResult<>(declaration, semicolon.rest());
     }
 
-    private Statement parseAssignment() {
-        Token name = stream.expect(TokenType.IDENTIFIER, "Expected a variable name");
-        stream.expect(TokenType.EQUALS, "Expected '=' after identifier");
-        Expression value = parseExpression();
-        Token semicolon = stream.expect(TokenType.SEMICOLON, "Expected ';' after assignment");
-        return new AssignmentStatement(name.lexeme(), value, name.start(), semicolon.end());
+    private ParseResult<Statement> parseAssignment(TokenStream tokens) {
+        ParseResult<Token> name = expect(tokens, TokenType.IDENTIFIER, "Expected a variable name");
+        ParseResult<Token> equals =
+                expect(name.rest(), TokenType.EQUALS, "Expected '=' after identifier");
+        ParseResult<Expression> value = parseExpression(equals.rest());
+        ParseResult<Token> semicolon =
+                expect(value.rest(), TokenType.SEMICOLON, "Expected ';' after assignment");
+        Statement assignment =
+                new AssignmentStatement(
+                        name.node().lexeme(),
+                        value.node(),
+                        name.node().start(),
+                        semicolon.node().end());
+        return new ParseResult<>(assignment, semicolon.rest());
     }
 
-    private Statement parsePrintln() {
-        Token printlnToken = stream.expect(TokenType.PRINTLN, "Expected 'println'");
-        stream.expect(TokenType.LEFT_PAREN, "Expected '(' after 'println'");
-        Expression argument = parseExpression();
-        stream.expect(TokenType.RIGHT_PAREN, "Expected ')' after println argument");
-        Token semicolon = stream.expect(TokenType.SEMICOLON, "Expected ';' after println call");
-        return new PrintlnStatement(argument, printlnToken.start(), semicolon.end());
+    private ParseResult<Statement> parsePrintln(TokenStream tokens) {
+        ParseResult<Token> println = expect(tokens, TokenType.PRINTLN, "Expected 'println'");
+        ParseResult<Token> leftParen =
+                expect(println.rest(), TokenType.LEFT_PAREN, "Expected '(' after 'println'");
+        ParseResult<Expression> argument = parseExpression(leftParen.rest());
+        ParseResult<Token> rightParen =
+                expect(
+                        argument.rest(),
+                        TokenType.RIGHT_PAREN,
+                        "Expected ')' after println argument");
+        ParseResult<Token> semicolon =
+                expect(rightParen.rest(), TokenType.SEMICOLON, "Expected ';' after println call");
+        Statement statement =
+                new PrintlnStatement(
+                        argument.node(), println.node().start(), semicolon.node().end());
+        return new ParseResult<>(statement, semicolon.rest());
     }
 
-    private Expression parseExpression() {
-        return parseAdditive();
+    private ParseResult<Expression> parseExpression(TokenStream tokens) {
+        return parseExpression(tokens, 0);
     }
 
-    private Expression parseAdditive() {
-        Expression left = parseMultiplicative();
-        while (stream.check(TokenType.PLUS) || stream.check(TokenType.MINUS)) {
-            Token operatorToken = stream.advance();
-            Expression right = parseMultiplicative();
-            BinaryOperator operator =
-                    operatorToken.type() == TokenType.PLUS
-                            ? BinaryOperator.PLUS
-                            : BinaryOperator.MINUS;
-            left = new BinaryExpression(left, operator, right, left.start(), right.end());
-        }
-        return left;
-    }
+    /**
+     * Precedence climbing: consumes operators whose resolved level is at least {@code
+     * minPrecedence}, recursing with {@code level + 1} for the right-hand side so that operators of
+     * the same level stay left-associative (each one gets picked up by this loop, not by the
+     * recursive call).
+     */
+    private ParseResult<Expression> parseExpression(TokenStream tokens, int minPrecedence) {
+        ParseResult<Expression> leftResult = parsePrimary(tokens);
+        Expression left = leftResult.node();
+        TokenStream rest = leftResult.rest();
 
-    private Expression parseMultiplicative() {
-        Expression left = parsePrimary();
-        while (stream.check(TokenType.STAR)
-                || stream.check(TokenType.SLASH)
-                || stream.check(TokenType.EXTENSION_OPERATOR)) {
-            Token operatorToken = stream.advance();
-            Expression right = parsePrimary();
-            if (operatorToken.type() == TokenType.EXTENSION_OPERATOR) {
-                OperatorDefinition operator = extensionOperators.get(operatorToken.lexeme());
-                left =
-                        new ExtendedBinaryExpression(
-                                left, operator, right, left.start(), right.end());
-            } else {
-                BinaryOperator operator =
-                        operatorToken.type() == TokenType.STAR
-                                ? BinaryOperator.MULTIPLY
-                                : BinaryOperator.DIVIDE;
-                left = new BinaryExpression(left, operator, right, left.start(), right.end());
+        while (check(rest, TokenType.OPERATOR)) {
+            OperatorDefinition operator = operators.get(peek(rest).lexeme());
+            int level = precedenceLevels.get(operator);
+            if (level < minPrecedence) {
+                break;
             }
+            ParseResult<Token> operatorToken = advance(rest);
+            ParseResult<Expression> rightResult = parseExpression(operatorToken.rest(), level + 1);
+            left =
+                    new BinaryExpression(
+                            left,
+                            operator,
+                            rightResult.node(),
+                            left.start(),
+                            rightResult.node().end());
+            rest = rightResult.rest();
         }
-        return left;
+        return new ParseResult<>(left, rest);
     }
 
-    private Expression parsePrimary() {
-        Token token = stream.peek();
+    private ParseResult<Expression> parsePrimary(TokenStream tokens) {
+        Token token = peek(tokens);
         switch (token.type()) {
-            case NUMBER_LITERAL:
-                stream.advance();
-                return new NumberLiteralExpression(
-                        Double.parseDouble(token.lexeme()), token.start(), token.end());
-            case STRING_LITERAL:
-                stream.advance();
-                return new StringLiteralExpression(token.lexeme(), token.start(), token.end());
-            case IDENTIFIER:
-                stream.advance();
-                return new IdentifierExpression(token.lexeme(), token.start(), token.end());
-            case LEFT_PAREN:
-                stream.advance();
-                Expression inner = parseExpression();
-                stream.expect(TokenType.RIGHT_PAREN, "Expected ')' to close expression");
-                return inner;
-            default:
-                throw new SyntaxException(
-                        "Expected an expression but found '" + token.lexeme() + "'",
-                        token.start(),
-                        token.end());
+            case NUMBER_LITERAL -> {
+                ParseResult<Token> consumed = advance(tokens);
+                Expression expression =
+                        new NumberLiteralExpression(
+                                Double.parseDouble(token.lexeme()), token.start(), token.end());
+                return new ParseResult<>(expression, consumed.rest());
+            }
+            case STRING_LITERAL -> {
+                ParseResult<Token> consumed = advance(tokens);
+                Expression expression =
+                        new StringLiteralExpression(token.lexeme(), token.start(), token.end());
+                return new ParseResult<>(expression, consumed.rest());
+            }
+            case IDENTIFIER -> {
+                ParseResult<Token> consumed = advance(tokens);
+                Expression expression =
+                        new IdentifierExpression(token.lexeme(), token.start(), token.end());
+                return new ParseResult<>(expression, consumed.rest());
+            }
+            case LEFT_PAREN -> {
+                ParseResult<Token> leftParen = advance(tokens);
+                ParseResult<Expression> inner = parseExpression(leftParen.rest());
+                ParseResult<Token> rightParen =
+                        expect(
+                                inner.rest(),
+                                TokenType.RIGHT_PAREN,
+                                "Expected ')' to close expression");
+                return new ParseResult<>(inner.node(), rightParen.rest());
+            }
+            default ->
+                    throw new SyntaxException(
+                            "Expected an expression but found '" + token.lexeme() + "'",
+                            token.start(),
+                            token.end());
         }
+    }
+
+    // --- Pure helpers over an immutable TokenStream — no shared cursor, nothing mutated. ---
+
+    private static Token peek(TokenStream tokens) {
+        return tokens.head();
+    }
+
+    private static boolean check(TokenStream tokens, TokenType type) {
+        return peek(tokens).type() == type;
+    }
+
+    private static ParseResult<Token> advance(TokenStream tokens) {
+        return new ParseResult<>(tokens.head(), tokens.tail());
+    }
+
+    private static ParseResult<Token> expect(
+            TokenStream tokens, TokenType type, String errorMessage) {
+        Token token = peek(tokens);
+        if (token.type() != type) {
+            throw new SyntaxException(
+                    errorMessage + ", but found '" + token.lexeme() + "'",
+                    token.start(),
+                    token.end());
+        }
+        return advance(tokens);
     }
 }

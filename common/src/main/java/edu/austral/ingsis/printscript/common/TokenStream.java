@@ -4,10 +4,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * An immutable, lazy cons-list of tokens. Deliberately unmemoized: every read this compiler does is
- * pure (see {@code PositionalSource}), and parsing is single-pass (each node's {@link #tail()} is
- * forced at most once in practice), so caching would add complexity for no real benefit. Re-forcing
- * a node twice is safe — just redundant work, never a different or wrong answer.
+ * A lazy, immutable linked list of tokens. It doesn't cache anything: parsing only walks the stream
+ * once, and reading a token has no side effects, so there's nothing to gain from remembering
+ * results — re-scanning the same spot twice costs a bit of time, never a wrong answer.
  */
 public final class TokenStream {
 
@@ -27,9 +26,7 @@ public final class TokenStream {
         return head.type() == TokenType.EOF;
     }
 
-    /**
-     * Non-destructive: returns a new stream reference; {@code this} remains valid and unchanged.
-     */
+    /** Doesn't mutate this stream — returns a new one, so any old reference stays valid. */
     public TokenStream tail() {
         return isAtEnd() ? this : tail.get();
     }

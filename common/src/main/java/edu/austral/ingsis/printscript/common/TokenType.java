@@ -14,15 +14,12 @@ public enum TokenType {
     COLON,
     EQUALS,
     SEMICOLON,
-    PLUS,
-    MINUS,
-    STAR,
-    SLASH,
     LEFT_PAREN,
     RIGHT_PAREN,
 
-    // Contributed by operator plugins at runtime (see OperatorDefinition)
-    EXTENSION_OPERATOR,
+    // Any binary operator — core (+, -, *, /) or plugin-contributed. Which one it is gets
+    // resolved by looking up the token's lexeme in the operator table (see OperatorDefinition).
+    OPERATOR,
 
     EOF
 }

@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.LexicalException;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
@@ -117,7 +119,7 @@ class PrintScriptLexerTest {
 
         List<Token> tokens = drain(lexerWithPlugin.tokenize(new StringPositionalSource("1 % 2")));
 
-        assertEquals(TokenType.EXTENSION_OPERATOR, tokens.get(1).type());
+        assertEquals(TokenType.OPERATOR, tokens.get(1).type());
         assertEquals("%", tokens.get(1).lexeme());
     }
 
@@ -135,6 +137,11 @@ class PrintScriptLexerTest {
             @Override
             public String symbol() {
                 return symbol;
+            }
+
+            @Override
+            public OperatorPrecedence precedence() {
+                return OperatorPrecedence.higherThan(CoreOperators.PLUS, CoreOperators.MINUS);
             }
 
             @Override
