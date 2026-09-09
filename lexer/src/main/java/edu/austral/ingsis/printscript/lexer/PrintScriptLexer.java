@@ -22,6 +22,6 @@ public final class PrintScriptLexer implements Lexer {
 
     @Override
     public TokenStream tokenize(PositionalSource source) {
-        return new TokenScanner(source, operators).scan(Cursor.start());
+        return new TokenScanner(source, operators, CoreKeywords.ALL).scan(Cursor.start());
     }
 }

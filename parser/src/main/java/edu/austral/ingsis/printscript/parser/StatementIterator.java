@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.SyntaxException;
@@ -48,6 +49,11 @@ final class StatementIterator implements Iterator<Statement> {
     private TokenStream tokens;
     private final Map<String, OperatorDefinition> operators;
     private final Map<OperatorDefinition, Integer> precedenceLevels;
+    private final Map<TokenType, Function<TokenStream, ParseResult<Statement>>> statementParsers =
+            Map.of(
+                    TokenType.LET, this::parseVariableDeclaration,
+                    TokenType.PRINTLN, this::parsePrintln,
+                    TokenType.IDENTIFIER, this::parseAssignment);
 
     StatementIterator(
             TokenStream tokens,
@@ -75,16 +81,14 @@ final class StatementIterator implements Iterator<Statement> {
 
     private ParseResult<Statement> parseStatement(TokenStream tokens) {
         Token current = peek(tokens);
-        return switch (current.type()) {
-            case LET -> parseVariableDeclaration(tokens);
-            case PRINTLN -> parsePrintln(tokens);
-            case IDENTIFIER -> parseAssignment(tokens);
-            default ->
-                    throw new SyntaxException(
-                            "Expected a statement but found '" + current.lexeme() + "'",
-                            current.start(),
-                            current.end());
-        };
+        Function<TokenStream, ParseResult<Statement>> parse = statementParsers.get(current.type());
+        if (parse == null) {
+            throw new SyntaxException(
+                    "Expected a statement but found '" + current.lexeme() + "'",
+                    current.start(),
+                    current.end());
+        }
+        return parse.apply(tokens);
     }
 
     private ParseResult<Statement> parseVariableDeclaration(TokenStream tokens) {
