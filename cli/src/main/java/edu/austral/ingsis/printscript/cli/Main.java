@@ -13,6 +13,7 @@ import edu.austral.ingsis.printscript.common.PrintScriptException;
 import edu.austral.ingsis.printscript.formatter.FormatterConfigLoader;
 import edu.austral.ingsis.printscript.formatter.PrintScriptFormatter;
 import edu.austral.ingsis.printscript.interpreter.PrintScriptInterpreter;
+import edu.austral.ingsis.printscript.interpreter.PrintScriptSemanticAnalyzer;
 import edu.austral.ingsis.printscript.lexer.PrintScriptLexer;
 import edu.austral.ingsis.printscript.parser.PrintScriptParser;
 
@@ -63,7 +64,7 @@ public final class Main {
                         new PrintScriptParser(extensionOperators));
 
         return switch (arguments.operation()) {
-            case VALIDATION -> new ValidationCommand(pipeline, new PrintScriptInterpreter());
+            case VALIDATION -> new ValidationCommand(pipeline, new PrintScriptSemanticAnalyzer());
             case EXECUTION -> new ExecutionCommand(pipeline, new PrintScriptInterpreter());
             case FORMATTING ->
                     new FormattingCommand(
