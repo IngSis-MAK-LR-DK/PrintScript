@@ -3,14 +3,14 @@ package edu.austral.ingsis.printscript.cli;
 import java.nio.file.Path;
 import java.util.Optional;
 
-record CliArguments(
-        Operation operation, Path sourceFile, String version, Optional<Path> configFile) {
+import edu.austral.ingsis.printscript.common.Version;
 
-    private static final String SUPPORTED_VERSION = "1.0";
+record CliArguments(
+        Operation operation, Path sourceFile, Version version, Optional<Path> configFile) {
 
     static final String USAGE =
             """
-            Usage: printscript <validation|execution|formatting|analyzing> <file> [--version 1.0] [--config <path>]
+            Usage: printscript <validation|execution|formatting|analyzing> <file> [--version 1.0|1.1] [--config <path>]
             """;
 
     static CliArguments parse(String[] args) {
@@ -20,22 +20,24 @@ record CliArguments(
 
         Operation operation = Operation.fromArgument(args[0]);
         Path sourceFile = Path.of(args[1]);
-        String version = SUPPORTED_VERSION;
+        String versionLabel = Version.V1_0.label();
         Path configFile = null;
 
         for (int i = 2; i < args.length; i++) {
             String flag = args[i];
             switch (flag) {
-                case "--version" -> version = valueFor(args, flag, i);
+                case "--version" -> versionLabel = valueFor(args, flag, i);
                 case "--config" -> configFile = Path.of(valueFor(args, flag, i));
                 default -> throw new CliUsageException("Unknown argument: " + flag + "\n" + USAGE);
             }
             i++;
         }
 
-        if (!version.equals(SUPPORTED_VERSION)) {
-            throw new CliUsageException(
-                    "Unsupported PrintScript version: " + version + " (only 1.0 is supported)");
+        Version version;
+        try {
+            version = Version.fromLabel(versionLabel);
+        } catch (IllegalArgumentException e) {
+            throw new CliUsageException(e.getMessage());
         }
 
         return new CliArguments(operation, sourceFile, version, Optional.ofNullable(configFile));
