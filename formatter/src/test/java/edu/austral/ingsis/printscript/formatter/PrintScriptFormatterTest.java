@@ -12,6 +12,7 @@ import edu.austral.ingsis.printscript.common.OperatorPrecedence;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -45,6 +46,10 @@ class PrintScriptFormatterTest {
 
     private static Expression str(String value) {
         return new StringLiteralExpression(value, P, P);
+    }
+
+    private static Expression bool(boolean value) {
+        return new BooleanLiteralExpression(value, P, P);
     }
 
     private static Statement let(String name, String type, Expression initializer) {
@@ -117,6 +122,16 @@ class PrintScriptFormatterTest {
         String result = format(config, println(str("he said \"hi\"")));
 
         assertEquals("println('he said \"hi\"');\n", result);
+    }
+
+    @Test
+    void formatsABooleanLiteral() {
+        // let flag: boolean = true;
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        String result = format(config, let("flag", "boolean", bool(true)));
+
+        assertEquals("let flag: boolean = true;\n", result);
     }
 
     @Test

@@ -134,6 +134,26 @@ class MainIntegrationTest {
     }
 
     @Test
+    void executesABooleanDeclarationUnder1_1() throws IOException {
+        Path source = writeSource("let isReady: boolean = true;\nprintln(isReady);");
+
+        Main.main(new String[] {"execution", source.toString(), "--version", "1.1"});
+
+        assertTrue(output().contains("true"));
+    }
+
+    @Test
+    void rejectsBooleanTypeUnder1_0() throws IOException {
+        Path source = writeSource("let isReady: boolean = true;\nprintln(isReady);");
+
+        int exitCode = Main.run(new String[] {"execution", source.toString()});
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput().contains("SyntaxException"));
+        assertTrue(errorOutput().contains("1.1"));
+    }
+
+    @Test
     void executionHandlesMultiByteUtf8Source() throws IOException {
         Path source = writeSource("let greeting: string = \"café 🙂\";\nprintln(greeting);");
 

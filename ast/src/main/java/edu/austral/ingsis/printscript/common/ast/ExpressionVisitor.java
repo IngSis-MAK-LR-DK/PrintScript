@@ -7,6 +7,8 @@ public interface ExpressionVisitor<R> {
 
     R visitStringLiteral(StringLiteralExpression expression);
 
+    R visitBooleanLiteral(BooleanLiteralExpression expression);
+
     R visitIdentifier(IdentifierExpression expression);
 
     R visitBinary(BinaryExpression expression);

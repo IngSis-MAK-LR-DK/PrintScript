@@ -2,6 +2,7 @@ package edu.austral.ingsis.printscript.analyzer;
 
 import java.util.Optional;
 
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -30,6 +31,7 @@ final class PrintlnArgumentRule implements AnalysisRule {
     private static boolean isIdentifierOrLiteral(Expression expression) {
         return expression instanceof IdentifierExpression
                 || expression instanceof NumberLiteralExpression
-                || expression instanceof StringLiteralExpression;
+                || expression instanceof StringLiteralExpression
+                || expression instanceof BooleanLiteralExpression;
     }
 }

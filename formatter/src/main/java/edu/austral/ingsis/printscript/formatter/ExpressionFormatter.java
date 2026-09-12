@@ -1,6 +1,7 @@
 package edu.austral.ingsis.printscript.formatter;
 
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -25,6 +26,11 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
         boolean hasSingleQuote = value.indexOf('\'') != -1;
         char quote = (hasDoubleQuote && !hasSingleQuote) ? '\'' : '"';
         return quote + value + quote;
+    }
+
+    @Override
+    public String visitBooleanLiteral(BooleanLiteralExpression expression) {
+        return String.valueOf(expression.value());
     }
 
     @Override

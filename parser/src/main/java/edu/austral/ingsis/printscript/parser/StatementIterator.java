@@ -7,12 +7,15 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
+import edu.austral.ingsis.printscript.common.Version;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -54,14 +57,17 @@ final class StatementIterator implements Iterator<Statement> {
                     TokenType.LET, this::parseVariableDeclaration,
                     TokenType.PRINTLN, this::parsePrintln,
                     TokenType.IDENTIFIER, this::parseAssignment);
+    private final Version version;
 
     StatementIterator(
             TokenStream tokens,
             Map<String, OperatorDefinition> operators,
-            Map<OperatorDefinition, Integer> precedenceLevels) {
+            Map<OperatorDefinition, Integer> precedenceLevels,
+            Version version) {
         this.tokens = tokens;
         this.operators = operators;
         this.precedenceLevels = precedenceLevels;
+        this.version = version;
     }
 
     @Override
@@ -99,6 +105,10 @@ final class StatementIterator implements Iterator<Statement> {
                 expect(name.rest(), TokenType.COLON, "Expected ':' after variable name");
         ParseResult<Token> type =
                 expect(colon.rest(), TokenType.IDENTIFIER, "Expected a type name");
+        if (type.node().lexeme().equals("boolean")) {
+            requireVersion(
+                    Version.V1_1, "The 'boolean' type", type.node().start(), type.node().end());
+        }
 
         TokenStream rest = type.rest();
         Optional<Expression> initializer = Optional.empty();
@@ -206,6 +216,14 @@ final class StatementIterator implements Iterator<Statement> {
                         new StringLiteralExpression(token.lexeme(), token.start(), token.end());
                 return new ParseResult<>(expression, consumed.rest());
             }
+            case BOOLEAN_LITERAL -> {
+                requireVersion(Version.V1_1, "Boolean literals", token.start(), token.end());
+                ParseResult<Token> consumed = advance(tokens);
+                Expression expression =
+                        new BooleanLiteralExpression(
+                                Boolean.parseBoolean(token.lexeme()), token.start(), token.end());
+                return new ParseResult<>(expression, consumed.rest());
+            }
             case IDENTIFIER -> {
                 ParseResult<Token> consumed = advance(tokens);
                 Expression expression =
@@ -227,6 +245,25 @@ final class StatementIterator implements Iterator<Statement> {
                             "Expected an expression but found '" + token.lexeme() + "'",
                             token.start(),
                             token.end());
+        }
+    }
+
+    /**
+     * Rejects a construct the running version doesn't support yet, with a message that names the
+     * construct and both versions — clearer than letting it fall through to a generic "expected a
+     * statement/expression" error.
+     */
+    private void requireVersion(Version required, String feature, Position start, Position end) {
+        if (!version.isAtLeast(required)) {
+            throw new SyntaxException(
+                    feature
+                            + ": requires PrintScript "
+                            + required.label()
+                            + " or later (running "
+                            + version.label()
+                            + ")",
+                    start,
+                    end);
         }
     }
 

@@ -18,8 +18,10 @@ import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
+import edu.austral.ingsis.printscript.common.Version;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -219,6 +221,61 @@ class PrintScriptParserTest {
                                 token(TokenType.IDENTIFIER, "number"),
                                 token(TokenType.EQUALS, "="),
                                 token(TokenType.NUMBER_LITERAL, "1"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF));
+    }
+
+    @Test
+    void parsesBooleanLiteralUnder1_1() {
+        // let flag: boolean = true;
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.LET, "let"),
+                                token(TokenType.IDENTIFIER, "flag"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "boolean"),
+                                token(TokenType.EQUALS, "="),
+                                token(TokenType.BOOLEAN_LITERAL, "true"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var declaration = assertInstanceOf(VariableDeclarationStatement.class, statements.get(0));
+        assertEquals("boolean", declaration.typeName());
+        var literal =
+                assertInstanceOf(BooleanLiteralExpression.class, declaration.initializer().get());
+        assertTrue(literal.value());
+    }
+
+    @Test
+    void throwsOnBooleanLiteralUnder1_0() {
+        // println(true);  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.PRINTLN, "println"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.BOOLEAN_LITERAL, "true"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF));
+    }
+
+    @Test
+    void throwsOnBooleanTypeUnder1_0() {
+        // let flag: boolean;  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.LET, "let"),
+                                token(TokenType.IDENTIFIER, "flag"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "boolean"),
                                 token(TokenType.SEMICOLON, ";"),
                                 EOF));
     }

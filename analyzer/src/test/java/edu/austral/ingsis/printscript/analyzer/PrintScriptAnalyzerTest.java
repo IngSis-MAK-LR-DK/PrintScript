@@ -10,6 +10,7 @@ import java.util.Optional;
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -43,6 +44,10 @@ class PrintScriptAnalyzerTest {
 
     private static Expression id(String name) {
         return new IdentifierExpression(name, P, P);
+    }
+
+    private static Expression bool(boolean value) {
+        return new BooleanLiteralExpression(value, P, P);
     }
 
     private static Statement let(String name, String type, Expression initializer) {
@@ -122,6 +127,16 @@ class PrintScriptAnalyzerTest {
         AnalyzerConfig config = new AnalyzerConfig(true, IdentifierCase.CAMEL_CASE, true);
 
         List<AnalysisFinding> findings = analyze(config, println(str("hello")));
+
+        assertTrue(findings.isEmpty());
+    }
+
+    @Test
+    void allowsPrintlnCalledWithABooleanLiteral() {
+        // println(true);
+        AnalyzerConfig config = new AnalyzerConfig(true, IdentifierCase.CAMEL_CASE, true);
+
+        List<AnalysisFinding> findings = analyze(config, println(bool(true)));
 
         assertTrue(findings.isEmpty());
     }

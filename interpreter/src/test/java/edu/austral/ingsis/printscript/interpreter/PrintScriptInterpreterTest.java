@@ -14,6 +14,7 @@ import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -41,6 +42,10 @@ class PrintScriptInterpreterTest {
 
     private static Expression str(String value) {
         return new StringLiteralExpression(value, P, P);
+    }
+
+    private static Expression bool(boolean value) {
+        return new BooleanLiteralExpression(value, P, P);
     }
 
     private static Expression id(String name) {
@@ -136,6 +141,21 @@ class PrintScriptInterpreterTest {
                                         binary(num(3), CoreOperators.MULTIPLY, num(4)))));
 
         assertEquals("14\n", output);
+    }
+
+    @Test
+    void declaresAndPrintsABooleanVariable() {
+        // let isReady: boolean = true;
+        // println(isReady);
+        String output = run(let("isReady", "boolean", bool(true)), println(id("isReady")));
+
+        assertEquals("true\n", output);
+    }
+
+    @Test
+    void throwsWhenAssigningANumberToABooleanVariable() {
+        // let flag: boolean = 1;
+        assertThrows(SemanticException.class, () -> run(let("flag", "boolean", num(1))));
     }
 
     @Test

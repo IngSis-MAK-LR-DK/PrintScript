@@ -61,7 +61,7 @@ public final class Main {
         Pipeline pipeline =
                 new Pipeline(
                         new PrintScriptLexer(extensionOperators),
-                        new PrintScriptParser(extensionOperators));
+                        new PrintScriptParser(extensionOperators, arguments.version()));
 
         return switch (arguments.operation()) {
             case VALIDATION -> new ValidationCommand(pipeline, new PrintScriptSemanticAnalyzer());

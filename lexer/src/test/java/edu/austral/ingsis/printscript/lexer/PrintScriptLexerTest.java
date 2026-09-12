@@ -78,6 +78,16 @@ class PrintScriptLexerTest {
     }
 
     @Test
+    void recognizesBooleanLiterals() {
+        List<Token> tokens = tokenize("true false");
+
+        assertEquals(TokenType.BOOLEAN_LITERAL, tokens.get(0).type());
+        assertEquals("true", tokens.get(0).lexeme());
+        assertEquals(TokenType.BOOLEAN_LITERAL, tokens.get(1).type());
+        assertEquals("false", tokens.get(1).lexeme());
+    }
+
+    @Test
     void recognizesPrintlnKeywordAndParens() {
         List<Token> tokens = tokenize("println(a);");
 

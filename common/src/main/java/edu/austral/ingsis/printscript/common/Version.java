@@ -20,6 +20,11 @@ public enum Version {
         return label;
     }
 
+    /** True if this version is {@code other} or a later one — versions only ever add features. */
+    public boolean isAtLeast(Version other) {
+        return this.ordinal() >= other.ordinal();
+    }
+
     public static Version fromLabel(String label) {
         for (Version version : values()) {
             if (version.label.equals(label)) {
