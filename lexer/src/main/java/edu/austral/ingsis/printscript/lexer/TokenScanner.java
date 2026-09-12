@@ -17,10 +17,15 @@ final class TokenScanner {
 
     private final PositionalSource source;
     private final Map<String, OperatorDefinition> operators;
+    private final Map<String, TokenType> keywords;
 
-    TokenScanner(PositionalSource source, Map<String, OperatorDefinition> operators) {
+    TokenScanner(
+            PositionalSource source,
+            Map<String, OperatorDefinition> operators,
+            Map<String, TokenType> keywords) {
         this.source = source;
         this.operators = operators;
+        this.keywords = keywords;
     }
 
     TokenStream scan(Cursor cursor) {
@@ -93,12 +98,7 @@ final class TokenScanner {
             current = current.advancedOver(peek(current));
         }
         String text = lexeme.toString();
-        TokenType type =
-                switch (text) {
-                    case "let" -> TokenType.LET;
-                    case "println" -> TokenType.PRINTLN;
-                    default -> TokenType.IDENTIFIER;
-                };
+        TokenType type = keywords.getOrDefault(text, TokenType.IDENTIFIER);
         return new ScanResult(new Token(type, text, start, current.position()), current);
     }
 

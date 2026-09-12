@@ -4,23 +4,23 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import edu.austral.ingsis.printscript.common.ast.Statement;
-import edu.austral.ingsis.printscript.interpreter.Interpreter;
+import edu.austral.ingsis.printscript.interpreter.SemanticAnalyzer;
 
-/** Runs the interpreter with its output discarded, so only syntax and semantic errors surface. */
+/** Checks a program's semantics, without running it for its actual output. */
 final class ValidationCommand implements Command {
 
     private final Pipeline pipeline;
-    private final Interpreter interpreter;
+    private final SemanticAnalyzer analyzer;
 
-    ValidationCommand(Pipeline pipeline, Interpreter interpreter) {
+    ValidationCommand(Pipeline pipeline, SemanticAnalyzer analyzer) {
         this.pipeline = pipeline;
-        this.interpreter = interpreter;
+        this.analyzer = analyzer;
     }
 
     @Override
     public int run(CliArguments arguments) throws IOException {
         Iterator<Statement> statements = pipeline.parse(arguments.sourceFile());
-        interpreter.interpret(statements, line -> {});
+        analyzer.analyze(statements);
         System.out.println("OK: no syntax or semantic errors found");
         return 0;
     }
