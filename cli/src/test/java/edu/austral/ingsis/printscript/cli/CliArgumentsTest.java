@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 
+import edu.austral.ingsis.printscript.common.Version;
+
 import org.junit.jupiter.api.Test;
 
 class CliArgumentsTest {
@@ -16,8 +18,16 @@ class CliArgumentsTest {
 
         assertEquals(Operation.EXECUTION, arguments.operation());
         assertEquals(Path.of("program.prs"), arguments.sourceFile());
-        assertEquals("1.0", arguments.version());
+        assertEquals(Version.V1_0, arguments.version());
         assertTrue(arguments.configFile().isEmpty());
+    }
+
+    @Test
+    void parsesVersionFlag() {
+        CliArguments arguments =
+                CliArguments.parse(new String[] {"execution", "program.prs", "--version", "1.1"});
+
+        assertEquals(Version.V1_1, arguments.version());
     }
 
     @Test

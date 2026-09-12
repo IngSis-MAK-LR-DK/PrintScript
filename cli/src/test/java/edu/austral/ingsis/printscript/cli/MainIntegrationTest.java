@@ -125,6 +125,15 @@ class MainIntegrationTest {
     }
 
     @Test
+    void acceptsVersion1_1WithNoBehaviorChangeYet() throws IOException {
+        Path source = writeSource("let name: string = \"World\";\nprintln(\"Hello \" + name);");
+
+        Main.main(new String[] {"execution", source.toString(), "--version", "1.1"});
+
+        assertTrue(output().contains("Hello World"));
+    }
+
+    @Test
     void executionHandlesMultiByteUtf8Source() throws IOException {
         Path source = writeSource("let greeting: string = \"café 🙂\";\nprintln(greeting);");
 
