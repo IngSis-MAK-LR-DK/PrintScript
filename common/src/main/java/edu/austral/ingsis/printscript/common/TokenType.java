@@ -5,6 +5,8 @@ public enum TokenType {
     LET,
     CONST,
     PRINTLN,
+    IF,
+    ELSE,
 
     // Literals and identifiers
     IDENTIFIER,
@@ -18,6 +20,8 @@ public enum TokenType {
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
 
     // Any binary operator — core (+, -, *, /) or plugin-contributed. Which one it is gets
     // resolved by looking up the token's lexeme in the operator table (see OperatorDefinition).

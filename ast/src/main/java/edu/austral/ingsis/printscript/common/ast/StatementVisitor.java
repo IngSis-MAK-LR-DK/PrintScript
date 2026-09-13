@@ -8,4 +8,6 @@ public interface StatementVisitor<R> {
     R visitAssignment(AssignmentStatement statement);
 
     R visitPrintln(PrintlnStatement statement);
+
+    R visitIf(IfStatement statement);
 }

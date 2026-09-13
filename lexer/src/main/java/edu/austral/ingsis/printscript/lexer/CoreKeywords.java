@@ -17,6 +17,8 @@ final class CoreKeywords {
                     "let", TokenType.LET,
                     "const", TokenType.CONST,
                     "println", TokenType.PRINTLN,
+                    "if", TokenType.IF,
+                    "else", TokenType.ELSE,
                     "true", TokenType.BOOLEAN_LITERAL,
                     "false", TokenType.BOOLEAN_LITERAL);
 

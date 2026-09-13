@@ -10,6 +10,7 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -78,6 +79,14 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
     @Override
     public Void visitAssignment(AssignmentStatement statement) {
         statement.value().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitIf(IfStatement statement) {
+        requireVersion(Version.V1_1, "'if'/'else'", statement.start(), statement.end());
+        statement.thenBranch().forEach(s -> s.accept(this));
+        statement.elseBranch().ifPresent(branch -> branch.forEach(s -> s.accept(this)));
         return null;
     }
 

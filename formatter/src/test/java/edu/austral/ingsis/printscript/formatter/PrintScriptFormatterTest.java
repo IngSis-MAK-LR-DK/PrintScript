@@ -15,6 +15,7 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -66,6 +67,20 @@ class PrintScriptFormatterTest {
 
     private static Statement println(Expression argument) {
         return new PrintlnStatement(argument, P, P);
+    }
+
+    private static IdentifierExpression condition(String name) {
+        return new IdentifierExpression(name, P, P);
+    }
+
+    private static Statement ifStmt(String conditionName, Statement... thenBranch) {
+        return new IfStatement(
+                condition(conditionName), List.of(thenBranch), Optional.empty(), P, P);
+    }
+
+    private static Statement ifElseStmt(
+            String conditionName, List<Statement> thenBranch, List<Statement> elseBranch) {
+        return new IfStatement(condition(conditionName), thenBranch, Optional.of(elseBranch), P, P);
     }
 
     private String format(FormatterConfig config, Statement... statements) {
@@ -149,7 +164,99 @@ class PrintScriptFormatterTest {
     }
 
     @Test
+    void formatsAnIfBlockWithTheConfiguredIndent() {
+        // if (flag) {
+        //   println(x);
+        // }
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 2);
+
+        String result = format(config, ifStmt("flag", println(id("x"))));
+
+        assertEquals("if (flag) {\n  println(x);\n}\n", result);
+    }
+
+    @Test
+    void formatsAnIfBlockWithADifferentIndentSize() {
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 4);
+
+        String result = format(config, ifStmt("flag", println(id("x"))));
+
+        assertEquals("if (flag) {\n    println(x);\n}\n", result);
+    }
+
+    @Test
+    void formatsAnIfElseBlockWithTheBraceOnTheSameLine() {
+        // if (flag) {
+        //   println(x);
+        // } else {
+        //   println(y);
+        // }
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 2);
+
+        String result =
+                format(
+                        config,
+                        ifElseStmt("flag", List.of(println(id("x"))), List.of(println(id("y")))));
+
+        assertEquals("if (flag) {\n  println(x);\n} else {\n  println(y);\n}\n", result);
+    }
+
+    @Test
+    void formatsMultipleStatementsInsideABlockEachOnItsOwnIndentedLine() {
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 2);
+
+        String result =
+                format(config, ifStmt("flag", let("x", "number", num(1)), println(id("x"))));
+
+        assertEquals("if (flag) {\n  let x: number = 1;\n  println(x);\n}\n", result);
+    }
+
+    @Test
+    void formatsANestedIfWithAccumulatedIndentation() {
+        // if (outer) {
+        //   if (inner) {
+        //     println(x);
+        //   }
+        // }
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 2);
+
+        String result = format(config, ifStmt("outer", ifStmt("inner", println(id("x")))));
+
+        assertEquals("if (outer) {\n  if (inner) {\n    println(x);\n  }\n}\n", result);
+    }
+
+    @Test
+    void doesNotInsertBlankLinesBeforePrintlnInsideABlock() {
+        // newLinesBeforePrintln only applies at the top level, not inside if/else blocks.
+        FormatterConfig config = new FormatterConfig(false, true, true, 2, 2);
+
+        String result =
+                format(config, ifStmt("flag", let("x", "number", num(1)), println(id("x"))));
+
+        assertEquals("if (flag) {\n  let x: number = 1;\n  println(x);\n}\n", result);
+    }
+
+    @Test
     void loadsConfigFromYaml() {
+        String yaml =
+                """
+                spaceBeforeColon: true
+                spaceAfterColon: false
+                spaceAroundEquals: false
+                newLinesBeforePrintln: 1
+                indentSize: 4
+                """;
+
+        FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
+
+        assertEquals(new FormatterConfig(true, false, false, 1, 4), config);
+    }
+
+    @Test
+    void indentSizeDefaultsToZeroWhenOmittedFromYaml() {
+        // Jackson deserializes records through the canonical (all-fields) constructor, never
+        // through an auxiliary one - so a field missing from the YAML gets Java's own default for
+        // its type (0 for an int), not whatever defaultConfig()/the compatibility constructor use.
         String yaml =
                 """
                 spaceBeforeColon: true
@@ -160,7 +267,7 @@ class PrintScriptFormatterTest {
 
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
-        assertEquals(new FormatterConfig(true, false, false, 1), config);
+        assertEquals(0, config.indentSize());
     }
 
     @Test

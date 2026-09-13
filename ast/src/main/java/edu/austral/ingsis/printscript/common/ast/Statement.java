@@ -2,7 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 /** A semicolon-terminated instruction: declaration, assignment or println. */
 public sealed interface Statement extends ASTNode
-        permits VariableDeclarationStatement, AssignmentStatement, PrintlnStatement {
+        permits VariableDeclarationStatement, AssignmentStatement, PrintlnStatement, IfStatement {
 
     <R> R accept(StatementVisitor<R> visitor);
 }

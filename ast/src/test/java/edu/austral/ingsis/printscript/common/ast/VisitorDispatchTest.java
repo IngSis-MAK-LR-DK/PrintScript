@@ -2,6 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import java.util.Optional;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
@@ -84,6 +85,9 @@ class VisitorDispatchTest {
                 new VariableDeclarationStatement("x", "number", Optional.of(literal), P, P);
         Statement assignment = new AssignmentStatement("x", literal, P, P);
         Statement println = new PrintlnStatement(literal, P, P);
+        Statement ifStatement =
+                new IfStatement(
+                        new IdentifierExpression("flag", P, P), List.of(), Optional.empty(), P, P);
 
         StatementVisitor<String> visitor =
                 new StatementVisitor<>() {
@@ -101,10 +105,16 @@ class VisitorDispatchTest {
                     public String visitPrintln(PrintlnStatement statement) {
                         return "println";
                     }
+
+                    @Override
+                    public String visitIf(IfStatement statement) {
+                        return "if";
+                    }
                 };
 
         assertEquals("declaration", declaration.accept(visitor));
         assertEquals("assignment", assignment.accept(visitor));
         assertEquals("println", println.accept(visitor));
+        assertEquals("if", ifStatement.accept(visitor));
     }
 }

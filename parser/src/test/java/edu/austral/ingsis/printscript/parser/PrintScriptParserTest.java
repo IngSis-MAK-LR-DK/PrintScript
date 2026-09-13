@@ -22,6 +22,7 @@ import edu.austral.ingsis.printscript.common.Version;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -334,6 +335,143 @@ class PrintScriptParserTest {
                                 token(TokenType.EQUALS, "="),
                                 token(TokenType.NUMBER_LITERAL, "1"),
                                 token(TokenType.SEMICOLON, ";"),
+                                EOF));
+    }
+
+    @Test
+    void parsesIfWithoutElse() {
+        // if (flag) { println(x); }
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.IF, "if"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "flag"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.PRINTLN, "println"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "x"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
+                                token(TokenType.RIGHT_BRACE, "}"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var ifStatement = assertInstanceOf(IfStatement.class, statements.get(0));
+        assertEquals("flag", ifStatement.condition().name());
+        assertEquals(1, ifStatement.thenBranch().size());
+        assertTrue(ifStatement.elseBranch().isEmpty());
+    }
+
+    @Test
+    void parsesIfWithElse() {
+        // if (flag) { } else { }
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.IF, "if"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "flag"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.RIGHT_BRACE, "}"),
+                                token(TokenType.ELSE, "else"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.RIGHT_BRACE, "}"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var ifStatement = assertInstanceOf(IfStatement.class, statements.get(0));
+        assertTrue(ifStatement.elseBranch().isPresent());
+        assertTrue(ifStatement.thenBranch().isEmpty());
+        assertTrue(ifStatement.elseBranch().get().isEmpty());
+    }
+
+    @Test
+    void parsesNestedIfInsideABlock() {
+        // if (outer) { if (inner) { } }
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.IF, "if"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "outer"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.IF, "if"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "inner"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.RIGHT_BRACE, "}"),
+                                token(TokenType.RIGHT_BRACE, "}"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var outer = assertInstanceOf(IfStatement.class, statements.get(0));
+        assertEquals(1, outer.thenBranch().size());
+        assertInstanceOf(IfStatement.class, outer.thenBranch().get(0));
+    }
+
+    @Test
+    void throwsWhenIfConditionIsNotAnIdentifier() {
+        // if (1) { }  -- condition must be a bare variable name
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        v1_1Parser
+                                .parse(
+                                        tokenStreamOf(
+                                                token(TokenType.IF, "if"),
+                                                token(TokenType.LEFT_PAREN, "("),
+                                                token(TokenType.NUMBER_LITERAL, "1"),
+                                                token(TokenType.RIGHT_PAREN, ")"),
+                                                token(TokenType.LEFT_BRACE, "{"),
+                                                token(TokenType.RIGHT_BRACE, "}"),
+                                                EOF))
+                                .forEachRemaining(s -> {}));
+    }
+
+    @Test
+    void throwsWhenIfBlockIsMissingClosingBrace() {
+        // if (flag) {  -- no closing '}'
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        v1_1Parser
+                                .parse(
+                                        tokenStreamOf(
+                                                token(TokenType.IF, "if"),
+                                                token(TokenType.LEFT_PAREN, "("),
+                                                token(TokenType.IDENTIFIER, "flag"),
+                                                token(TokenType.RIGHT_PAREN, ")"),
+                                                token(TokenType.LEFT_BRACE, "{"),
+                                                EOF))
+                                .forEachRemaining(s -> {}));
+    }
+
+    @Test
+    void throwsOnIfUnder1_0() {
+        // if (flag) { }  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.IF, "if"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.IDENTIFIER, "flag"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.LEFT_BRACE, "{"),
+                                token(TokenType.RIGHT_BRACE, "}"),
                                 EOF));
     }
 

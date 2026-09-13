@@ -1,8 +1,12 @@
 package edu.austral.ingsis.printscript.interpreter;
 
+import java.util.List;
+
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
@@ -56,5 +60,26 @@ final class StatementExecutor implements StatementVisitor<Environment> {
         Object value = statement.argument().accept(evaluator);
         emitter.emit(ExpressionEvaluator.stringify(value));
         return environment;
+    }
+
+    @Override
+    public Environment visitIf(IfStatement statement) {
+        Object conditionValue =
+                environment.read(statement.condition().name(), statement.condition().start());
+        if (!(conditionValue instanceof Boolean isTrue)) {
+            throw new SemanticException(
+                    "'if' condition must be a 'boolean' variable, but '"
+                            + statement.condition().name()
+                            + "' is not",
+                    statement.condition().start(),
+                    statement.condition().end());
+        }
+        List<Statement> branch =
+                isTrue ? statement.thenBranch() : statement.elseBranch().orElse(List.of());
+        Environment current = environment;
+        for (Statement inner : branch) {
+            current = inner.accept(new StatementExecutor(current, emitter));
+        }
+        return current;
     }
 }

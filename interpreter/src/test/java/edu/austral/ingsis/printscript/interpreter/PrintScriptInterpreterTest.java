@@ -17,6 +17,7 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -79,6 +80,20 @@ class PrintScriptInterpreterTest {
 
     private static Statement println(Expression argument) {
         return new PrintlnStatement(argument, P, P);
+    }
+
+    private static IdentifierExpression condition(String name) {
+        return new IdentifierExpression(name, P, P);
+    }
+
+    private static Statement ifStmt(String conditionName, Statement... thenBranch) {
+        return new IfStatement(
+                condition(conditionName), List.of(thenBranch), Optional.empty(), P, P);
+    }
+
+    private static Statement ifElseStmt(
+            String conditionName, List<Statement> thenBranch, List<Statement> elseBranch) {
+        return new IfStatement(condition(conditionName), thenBranch, Optional.of(elseBranch), P, P);
     }
 
     private String run(Statement... statements) {
@@ -209,6 +224,81 @@ class PrintScriptInterpreterTest {
     void throwsWhenAConstantHasNoInitializer() {
         // const x: number;
         assertThrows(SemanticException.class, () -> run(constUninitialized("x", "number")));
+    }
+
+    @Test
+    void ifExecutesThenBranchWhenConditionIsTrue() {
+        // let flag: boolean = true;
+        // if (flag) { println("yes"); } else { println("no"); }
+        String output =
+                run(
+                        let("flag", "boolean", bool(true)),
+                        ifElseStmt(
+                                "flag", List.of(println(str("yes"))), List.of(println(str("no")))));
+
+        assertEquals("yes\n", output);
+    }
+
+    @Test
+    void ifExecutesElseBranchWhenConditionIsFalse() {
+        // let flag: boolean = false;
+        // if (flag) { println("yes"); } else { println("no"); }
+        String output =
+                run(
+                        let("flag", "boolean", bool(false)),
+                        ifElseStmt(
+                                "flag", List.of(println(str("yes"))), List.of(println(str("no")))));
+
+        assertEquals("no\n", output);
+    }
+
+    @Test
+    void ifDoesNothingWhenConditionIsFalseAndThereIsNoElse() {
+        // let flag: boolean = false;
+        // if (flag) { println("yes"); }
+        String output =
+                run(let("flag", "boolean", bool(false)), ifStmt("flag", println(str("yes"))));
+
+        assertEquals("", output);
+    }
+
+    @Test
+    void throwsWhenIfConditionIsNotABooleanVariable() {
+        // let flag: number = 1;
+        // if (flag) { println("yes"); }
+        assertThrows(
+                SemanticException.class,
+                () -> run(let("flag", "number", num(1)), ifStmt("flag", println(str("yes")))));
+    }
+
+    @Test
+    void aVariableDeclaredInsideAnIfBlockIsVisibleAfterward() {
+        // there's no scoping by block - a declaration inside if leaks to the rest of the program,
+        // same environment threads through.
+        // let flag: boolean = true;
+        // if (flag) { let x: number = 1; }
+        // println(x);
+        String output =
+                run(
+                        let("flag", "boolean", bool(true)),
+                        ifStmt("flag", let("x", "number", num(1))),
+                        println(id("x")));
+
+        assertEquals("1\n", output);
+    }
+
+    @Test
+    void nestedIfIsEvaluatedCorrectly() {
+        // let outer: boolean = true;
+        // let inner: boolean = true;
+        // if (outer) { if (inner) { println("both"); } }
+        String output =
+                run(
+                        let("outer", "boolean", bool(true)),
+                        let("inner", "boolean", bool(true)),
+                        ifStmt("outer", ifStmt("inner", println(str("both")))));
+
+        assertEquals("both\n", output);
     }
 
     @Test
