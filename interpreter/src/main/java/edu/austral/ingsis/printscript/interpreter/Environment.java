@@ -30,7 +30,7 @@ final class Environment {
         if (declaredTypes.containsKey(name)) {
             throw new SemanticException("Variable '" + name + "' is already declared", at, at);
         }
-        if (!type.equals("number") && !type.equals("string")) {
+        if (!type.equals("number") && !type.equals("string") && !type.equals("boolean")) {
             throw new SemanticException("Unknown type '" + type + "'", at, at);
         }
         Map<String, String> updatedTypes = new HashMap<>(declaredTypes);
@@ -64,7 +64,8 @@ final class Environment {
     private void requireMatchingType(String name, String type, Object value, Position at) {
         boolean matches =
                 (type.equals("number") && value instanceof Double)
-                        || (type.equals("string") && value instanceof String);
+                        || (type.equals("string") && value instanceof String)
+                        || (type.equals("boolean") && value instanceof Boolean);
         if (!matches) {
             throw new SemanticException(
                     "Cannot assign a value of type '"
@@ -80,6 +81,12 @@ final class Environment {
     }
 
     private static String runtimeTypeName(Object value) {
-        return value instanceof Double ? "number" : "string";
+        if (value instanceof Double) {
+            return "number";
+        }
+        if (value instanceof Boolean) {
+            return "boolean";
+        }
+        return "string";
     }
 }

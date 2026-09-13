@@ -13,6 +13,7 @@ import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -22,7 +23,10 @@ import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
 /**
- * Recursive-descent parser for the PrintScript 1.0 grammar:
+ * Recursive-descent parser for the PrintScript grammar — the superset across every version. This
+ * class never rejects a construct for being from a later version than the one running; that's
+ * {@link VersionValidator}'s job, applied once to the finished AST (see {@link
+ * PrintScriptParser#parse}), so this grammar never has to know which version is active:
  *
  * <pre>
  * statement   := declaration | assignment | println
@@ -30,7 +34,7 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
  * expression  := primary (OPERATOR primary)*
- * primary     := NUMBER | STRING | IDENTIFIER | "(" expression ")"
+ * primary     := NUMBER | STRING | BOOLEAN | IDENTIFIER | "(" expression ")"
  * </pre>
  *
  * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
@@ -204,6 +208,13 @@ final class StatementIterator implements Iterator<Statement> {
                 ParseResult<Token> consumed = advance(tokens);
                 Expression expression =
                         new StringLiteralExpression(token.lexeme(), token.start(), token.end());
+                return new ParseResult<>(expression, consumed.rest());
+            }
+            case BOOLEAN_LITERAL -> {
+                ParseResult<Token> consumed = advance(tokens);
+                Expression expression =
+                        new BooleanLiteralExpression(
+                                Boolean.parseBoolean(token.lexeme()), token.start(), token.end());
                 return new ParseResult<>(expression, consumed.rest());
             }
             case IDENTIFIER -> {

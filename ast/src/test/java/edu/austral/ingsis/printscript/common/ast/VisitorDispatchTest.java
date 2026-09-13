@@ -19,6 +19,7 @@ class VisitorDispatchTest {
     void expressionVisitorDispatchesToTheRightMethod() {
         Expression number = new NumberLiteralExpression(1, P, P);
         Expression string = new StringLiteralExpression("a", P, P);
+        Expression bool = new BooleanLiteralExpression(true, P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
         Expression binary = new BinaryExpression(number, stubOperator(), number, P, P);
 
@@ -35,6 +36,11 @@ class VisitorDispatchTest {
                     }
 
                     @Override
+                    public String visitBooleanLiteral(BooleanLiteralExpression expression) {
+                        return "boolean";
+                    }
+
+                    @Override
                     public String visitIdentifier(IdentifierExpression expression) {
                         return "identifier";
                     }
@@ -47,6 +53,7 @@ class VisitorDispatchTest {
 
         assertEquals("number", number.accept(visitor));
         assertEquals("string", string.accept(visitor));
+        assertEquals("boolean", bool.accept(visitor));
         assertEquals("identifier", identifier.accept(visitor));
         assertEquals("binary", binary.accept(visitor));
     }

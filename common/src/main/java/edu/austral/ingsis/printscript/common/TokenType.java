@@ -9,6 +9,7 @@ public enum TokenType {
     IDENTIFIER,
     NUMBER_LITERAL,
     STRING_LITERAL,
+    BOOLEAN_LITERAL,
 
     // Symbols
     COLON,

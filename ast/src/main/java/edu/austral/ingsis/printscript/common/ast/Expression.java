@@ -4,6 +4,7 @@ package edu.austral.ingsis.printscript.common.ast;
 public sealed interface Expression extends ASTNode
         permits NumberLiteralExpression,
                 StringLiteralExpression,
+                BooleanLiteralExpression,
                 IdentifierExpression,
                 BinaryExpression {
 

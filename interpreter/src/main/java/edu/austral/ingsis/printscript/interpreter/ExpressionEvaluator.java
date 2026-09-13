@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.interpreter;
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
+import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -24,6 +25,11 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     @Override
     public Object visitStringLiteral(StringLiteralExpression expression) {
+        return expression.value();
+    }
+
+    @Override
+    public Object visitBooleanLiteral(BooleanLiteralExpression expression) {
         return expression.value();
     }
 

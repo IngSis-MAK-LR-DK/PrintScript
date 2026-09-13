@@ -13,7 +13,11 @@ import edu.austral.ingsis.printscript.common.TokenType;
 final class CoreKeywords {
 
     static final Map<String, TokenType> ALL =
-            Map.of("let", TokenType.LET, "println", TokenType.PRINTLN);
+            Map.of(
+                    "let", TokenType.LET,
+                    "println", TokenType.PRINTLN,
+                    "true", TokenType.BOOLEAN_LITERAL,
+                    "false", TokenType.BOOLEAN_LITERAL);
 
     private CoreKeywords() {}
 }
