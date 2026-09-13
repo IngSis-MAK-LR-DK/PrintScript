@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.parser;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,20 +57,31 @@ class VersionValidatorTest {
         return new PrintlnStatement(argument, P, P);
     }
 
+    /**
+     * Pulls every statement through {@code validated}, which is what actually triggers each check -
+     * {@link VersionValidator#validating} itself never looks at anything up front.
+     */
+    private static void drain(Iterator<Statement> validated) {
+        validated.forEachRemaining(statement -> {});
+    }
+
+    private static void validate(List<Statement> statements, Version version) {
+        drain(new VersionValidator(version).validating(statements.iterator()));
+    }
+
     @Test
     void acceptsOnly1_0ConstructsUnder1_0() {
         List<Statement> statements =
                 List.of(let("x", "number", num(1)), println(id("x")), assign("x", num(2)));
 
-        assertDoesNotThrow(() -> VersionValidator.validate(statements, Version.V1_0));
+        assertDoesNotThrow(() -> validate(statements, Version.V1_0));
     }
 
     @Test
     void throwsOnBooleanLiteralUnder1_0() {
         List<Statement> statements = List.of(println(bool(true)));
 
-        assertThrows(
-                SyntaxException.class, () -> VersionValidator.validate(statements, Version.V1_0));
+        assertThrows(SyntaxException.class, () -> validate(statements, Version.V1_0));
     }
 
     @Test
@@ -85,16 +97,14 @@ class VersionValidatorTest {
                                         P,
                                         P)));
 
-        assertThrows(
-                SyntaxException.class, () -> VersionValidator.validate(statements, Version.V1_0));
+        assertThrows(SyntaxException.class, () -> validate(statements, Version.V1_0));
     }
 
     @Test
     void throwsOnBooleanTypeDeclarationUnder1_0() {
         List<Statement> statements = List.of(let("flag", "boolean", bool(true)));
 
-        assertThrows(
-                SyntaxException.class, () -> VersionValidator.validate(statements, Version.V1_0));
+        assertThrows(SyntaxException.class, () -> validate(statements, Version.V1_0));
     }
 
     @Test
@@ -102,6 +112,19 @@ class VersionValidatorTest {
         List<Statement> statements =
                 List.of(let("flag", "boolean", bool(true)), println(bool(false)));
 
-        assertDoesNotThrow(() -> VersionValidator.validate(statements, Version.V1_1));
+        assertDoesNotThrow(() -> validate(statements, Version.V1_1));
+    }
+
+    @Test
+    void checksLazilyOnlyWhenPulled() {
+        // A violation later in the program doesn't stop an earlier, valid statement from being
+        // handed back first - matches how every other error in this language already surfaces
+        // (per statement, as it's reached), not as a whole-program check up front.
+        List<Statement> statements = List.of(println(id("ok")), println(bool(true)));
+        Iterator<Statement> validated =
+                new VersionValidator(Version.V1_0).validating(statements.iterator());
+
+        assertDoesNotThrow(validated::next);
+        assertThrows(SyntaxException.class, validated::next);
     }
 }
