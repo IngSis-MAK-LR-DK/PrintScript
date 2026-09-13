@@ -161,7 +161,7 @@ class PrintScriptParserTest {
     }
 
     @Test
-    void parsesMultipleStatementsLazily() {
+    void parsesMultipleStatements() {
         // let a: number = 1;
         // let b: number = 2;
         // println(a + b);

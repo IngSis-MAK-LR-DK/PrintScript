@@ -7,12 +7,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
-import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
 import edu.austral.ingsis.printscript.common.TokenType;
-import edu.austral.ingsis.printscript.common.Version;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
@@ -25,7 +23,10 @@ import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
 /**
- * Recursive-descent parser for the PrintScript 1.0 grammar:
+ * Recursive-descent parser for the PrintScript grammar — the superset across every version. This
+ * class never rejects a construct for being from a later version than the one running; that's
+ * {@link VersionValidator}'s job, applied once to the finished AST (see {@link
+ * PrintScriptParser#parse}), so this grammar never has to know which version is active:
  *
  * <pre>
  * statement   := declaration | assignment | println
@@ -33,7 +34,7 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
  * expression  := primary (OPERATOR primary)*
- * primary     := NUMBER | STRING | IDENTIFIER | "(" expression ")"
+ * primary     := NUMBER | STRING | BOOLEAN | IDENTIFIER | "(" expression ")"
  * </pre>
  *
  * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
@@ -57,17 +58,14 @@ final class StatementIterator implements Iterator<Statement> {
                     TokenType.LET, this::parseVariableDeclaration,
                     TokenType.PRINTLN, this::parsePrintln,
                     TokenType.IDENTIFIER, this::parseAssignment);
-    private final Version version;
 
     StatementIterator(
             TokenStream tokens,
             Map<String, OperatorDefinition> operators,
-            Map<OperatorDefinition, Integer> precedenceLevels,
-            Version version) {
+            Map<OperatorDefinition, Integer> precedenceLevels) {
         this.tokens = tokens;
         this.operators = operators;
         this.precedenceLevels = precedenceLevels;
-        this.version = version;
     }
 
     @Override
@@ -105,10 +103,6 @@ final class StatementIterator implements Iterator<Statement> {
                 expect(name.rest(), TokenType.COLON, "Expected ':' after variable name");
         ParseResult<Token> type =
                 expect(colon.rest(), TokenType.IDENTIFIER, "Expected a type name");
-        if (type.node().lexeme().equals("boolean")) {
-            requireVersion(
-                    Version.V1_1, "The 'boolean' type", type.node().start(), type.node().end());
-        }
 
         TokenStream rest = type.rest();
         Optional<Expression> initializer = Optional.empty();
@@ -217,7 +211,6 @@ final class StatementIterator implements Iterator<Statement> {
                 return new ParseResult<>(expression, consumed.rest());
             }
             case BOOLEAN_LITERAL -> {
-                requireVersion(Version.V1_1, "Boolean literals", token.start(), token.end());
                 ParseResult<Token> consumed = advance(tokens);
                 Expression expression =
                         new BooleanLiteralExpression(
@@ -245,25 +238,6 @@ final class StatementIterator implements Iterator<Statement> {
                             "Expected an expression but found '" + token.lexeme() + "'",
                             token.start(),
                             token.end());
-        }
-    }
-
-    /**
-     * Rejects a construct the running version doesn't support yet, with a message that names the
-     * construct and both versions — clearer than letting it fall through to a generic "expected a
-     * statement/expression" error.
-     */
-    private void requireVersion(Version required, String feature, Position start, Position end) {
-        if (!version.isAtLeast(required)) {
-            throw new SyntaxException(
-                    feature
-                            + ": requires PrintScript "
-                            + required.label()
-                            + " or later (running "
-                            + version.label()
-                            + ")",
-                    start,
-                    end);
         }
     }
 

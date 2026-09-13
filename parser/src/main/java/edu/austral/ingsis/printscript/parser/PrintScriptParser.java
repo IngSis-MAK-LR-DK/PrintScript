@@ -1,6 +1,8 @@
 package edu.austral.ingsis.printscript.parser;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,10 @@ public final class PrintScriptParser implements Parser {
 
     @Override
     public Iterator<Statement> parse(TokenStream tokens) {
-        return new StatementIterator(tokens, operators, precedenceLevels, version);
+        List<Statement> statements = new ArrayList<>();
+        new StatementIterator(tokens, operators, precedenceLevels)
+                .forEachRemaining(statements::add);
+        VersionValidator.validate(statements, version);
+        return statements.iterator();
     }
 }
