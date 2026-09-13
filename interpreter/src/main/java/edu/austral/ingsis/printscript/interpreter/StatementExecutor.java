@@ -1,5 +1,6 @@
 package edu.austral.ingsis.printscript.interpreter;
 
+import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
@@ -25,9 +26,18 @@ final class StatementExecutor implements StatementVisitor<Environment> {
 
     @Override
     public Environment visitVariableDeclaration(VariableDeclarationStatement statement) {
+        if (statement.isConstant() && statement.initializer().isEmpty()) {
+            throw new SemanticException(
+                    "'const' variable '" + statement.identifierName() + "' must be initialized",
+                    statement.start(),
+                    statement.end());
+        }
         Environment declared =
                 environment.declare(
-                        statement.identifierName(), statement.typeName(), statement.start());
+                        statement.identifierName(),
+                        statement.typeName(),
+                        statement.isConstant(),
+                        statement.start());
         return statement
                 .initializer()
                 .map(initializer -> initializer.accept(evaluator))

@@ -88,6 +88,21 @@ class PrintScriptLexerTest {
     }
 
     @Test
+    void recognizesConstKeyword() {
+        List<Token> tokens = tokenize("const x: number = 1;");
+
+        assertEquals(TokenType.CONST, tokens.get(0).type());
+    }
+
+    @Test
+    void aNameStartingWithConstIsStillAnIdentifier() {
+        List<Token> tokens = tokenize("constant");
+
+        assertEquals(TokenType.IDENTIFIER, tokens.get(0).type());
+        assertEquals("constant", tokens.get(0).lexeme());
+    }
+
+    @Test
     void recognizesPrintlnKeywordAndParens() {
         List<Token> tokens = tokenize("println(a);");
 

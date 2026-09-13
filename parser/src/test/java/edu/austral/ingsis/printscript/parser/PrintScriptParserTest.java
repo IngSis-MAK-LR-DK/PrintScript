@@ -281,6 +281,63 @@ class PrintScriptParserTest {
     }
 
     @Test
+    void parsesConstDeclarationUnder1_1() {
+        // const x: number = 1;
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.CONST, "const"),
+                                token(TokenType.IDENTIFIER, "x"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "number"),
+                                token(TokenType.EQUALS, "="),
+                                token(TokenType.NUMBER_LITERAL, "1"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var declaration = assertInstanceOf(VariableDeclarationStatement.class, statements.get(0));
+        assertTrue(declaration.isConstant());
+    }
+
+    @Test
+    void letDeclarationIsNotConstant() {
+        // let x: number = 1;
+        List<Statement> statements =
+                parse(
+                        token(TokenType.LET, "let"),
+                        token(TokenType.IDENTIFIER, "x"),
+                        token(TokenType.COLON, ":"),
+                        token(TokenType.IDENTIFIER, "number"),
+                        token(TokenType.EQUALS, "="),
+                        token(TokenType.NUMBER_LITERAL, "1"),
+                        token(TokenType.SEMICOLON, ";"),
+                        EOF);
+
+        var declaration = assertInstanceOf(VariableDeclarationStatement.class, statements.get(0));
+        assertTrue(!declaration.isConstant());
+    }
+
+    @Test
+    void throwsOnConstUnder1_0() {
+        // const x: number = 1;  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.CONST, "const"),
+                                token(TokenType.IDENTIFIER, "x"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "number"),
+                                token(TokenType.EQUALS, "="),
+                                token(TokenType.NUMBER_LITERAL, "1"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF));
+    }
+
+    @Test
     void parsesExtensionOperatorWhenRegistered() {
         // x = 7 % 3;
         OperatorDefinition modulo = stubOperator("%");

@@ -68,6 +68,9 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
         if (statement.typeName().equals("boolean")) {
             requireVersion(Version.V1_1, "The 'boolean' type", statement.start(), statement.end());
         }
+        if (statement.isConstant()) {
+            requireVersion(Version.V1_1, "'const'", statement.start(), statement.end());
+        }
         statement.initializer().ifPresent(initializer -> initializer.accept(this));
         return null;
     }

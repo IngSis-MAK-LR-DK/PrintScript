@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.common;
 public enum TokenType {
     // Keywords
     LET,
+    CONST,
     PRINTLN,
 
     // Literals and identifiers

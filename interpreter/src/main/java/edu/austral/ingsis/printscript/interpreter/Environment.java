@@ -1,13 +1,16 @@
 package edu.austral.ingsis.printscript.interpreter;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
 
 /**
- * Holds the variables declared so far: each one's type, and its value once it's assigned.
+ * Holds the variables declared so far: each one's type, its value once it's assigned, and whether
+ * it was declared {@code const}.
  *
  * <p>Immutable: {@link #declare} and {@link #assign} don't change this instance, they return a new
  * one with the extra binding.
@@ -16,17 +19,20 @@ final class Environment {
 
     private final Map<String, String> declaredTypes;
     private final Map<String, Object> values;
+    private final Set<String> constants;
 
     Environment() {
-        this(Map.of(), Map.of());
+        this(Map.of(), Map.of(), Set.of());
     }
 
-    private Environment(Map<String, String> declaredTypes, Map<String, Object> values) {
+    private Environment(
+            Map<String, String> declaredTypes, Map<String, Object> values, Set<String> constants) {
         this.declaredTypes = declaredTypes;
         this.values = values;
+        this.constants = constants;
     }
 
-    Environment declare(String name, String type, Position at) {
+    Environment declare(String name, String type, boolean isConstant, Position at) {
         if (declaredTypes.containsKey(name)) {
             throw new SemanticException("Variable '" + name + "' is already declared", at, at);
         }
@@ -35,7 +41,12 @@ final class Environment {
         }
         Map<String, String> updatedTypes = new HashMap<>(declaredTypes);
         updatedTypes.put(name, type);
-        return new Environment(Map.copyOf(updatedTypes), values);
+        Set<String> updatedConstants = constants;
+        if (isConstant) {
+            updatedConstants = new HashSet<>(constants);
+            updatedConstants.add(name);
+        }
+        return new Environment(Map.copyOf(updatedTypes), values, Set.copyOf(updatedConstants));
     }
 
     Environment assign(String name, Object value, Position at) {
@@ -43,10 +54,13 @@ final class Environment {
         if (type == null) {
             throw new SemanticException("Variable '" + name + "' is not declared", at, at);
         }
+        if (constants.contains(name) && values.containsKey(name)) {
+            throw new SemanticException("Cannot reassign constant '" + name + "'", at, at);
+        }
         requireMatchingType(name, type, value, at);
         Map<String, Object> updatedValues = new HashMap<>(values);
         updatedValues.put(name, value);
-        return new Environment(declaredTypes, Map.copyOf(updatedValues));
+        return new Environment(declaredTypes, Map.copyOf(updatedValues), constants);
     }
 
     Object read(String name, Position at) {

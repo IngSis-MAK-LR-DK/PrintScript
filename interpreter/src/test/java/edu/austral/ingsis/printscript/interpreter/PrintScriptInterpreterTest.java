@@ -65,6 +65,14 @@ class PrintScriptInterpreterTest {
         return new VariableDeclarationStatement(name, type, Optional.empty(), P, P);
     }
 
+    private static Statement constDecl(String name, String type, Expression initializer) {
+        return new VariableDeclarationStatement(name, type, true, Optional.of(initializer), P, P);
+    }
+
+    private static Statement constUninitialized(String name, String type) {
+        return new VariableDeclarationStatement(name, type, true, Optional.empty(), P, P);
+    }
+
     private static Statement assign(String name, Expression value) {
         return new AssignmentStatement(name, value, P, P);
     }
@@ -177,6 +185,30 @@ class PrintScriptInterpreterTest {
         assertThrows(
                 SemanticException.class,
                 () -> run(letUninitialized("x", "number"), println(id("x"))));
+    }
+
+    @Test
+    void declaresAndPrintsAConstant() {
+        // const x: number = 1;
+        // println(x);
+        String output = run(constDecl("x", "number", num(1)), println(id("x")));
+
+        assertEquals("1\n", output);
+    }
+
+    @Test
+    void throwsWhenReassigningAConstant() {
+        // const x: number = 1;
+        // x = 2;
+        assertThrows(
+                SemanticException.class,
+                () -> run(constDecl("x", "number", num(1)), assign("x", num(2))));
+    }
+
+    @Test
+    void throwsWhenAConstantHasNoInitializer() {
+        // const x: number;
+        assertThrows(SemanticException.class, () -> run(constUninitialized("x", "number")));
     }
 
     @Test

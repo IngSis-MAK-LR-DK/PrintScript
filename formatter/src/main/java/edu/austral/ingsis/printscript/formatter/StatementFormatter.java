@@ -16,7 +16,9 @@ final class StatementFormatter implements StatementVisitor<String> {
 
     @Override
     public String visitVariableDeclaration(VariableDeclarationStatement statement) {
-        StringBuilder text = new StringBuilder("let ").append(statement.identifierName());
+        StringBuilder text =
+                new StringBuilder(statement.isConstant() ? "const " : "let ")
+                        .append(statement.identifierName());
         if (config.spaceBeforeColon()) {
             text.append(' ');
         }

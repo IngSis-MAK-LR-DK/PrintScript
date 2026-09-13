@@ -56,6 +56,10 @@ class PrintScriptFormatterTest {
         return new VariableDeclarationStatement(name, type, Optional.of(initializer), P, P);
     }
 
+    private static Statement constDecl(String name, String type, Expression initializer) {
+        return new VariableDeclarationStatement(name, type, true, Optional.of(initializer), P, P);
+    }
+
     private static Statement assign(String name, Expression value) {
         return new AssignmentStatement(name, value, P, P);
     }
@@ -86,6 +90,16 @@ class PrintScriptFormatterTest {
         String result = format(config, let("x", "number", num(12)));
 
         assertEquals("let x: number = 12;\n", result);
+    }
+
+    @Test
+    void formatsAConstDeclarationWithTheConstKeyword() {
+        // const x: number = 12;
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        String result = format(config, constDecl("x", "number", num(12)));
+
+        assertEquals("const x: number = 12;\n", result);
     }
 
     @Test

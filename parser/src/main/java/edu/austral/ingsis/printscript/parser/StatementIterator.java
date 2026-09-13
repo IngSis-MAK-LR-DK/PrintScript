@@ -30,7 +30,7 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  *
  * <pre>
  * statement   := declaration | assignment | println
- * declaration := "let" IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
+ * declaration := ("let" | "const") IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
  * expression  := primary (OPERATOR primary)*
@@ -56,6 +56,7 @@ final class StatementIterator implements Iterator<Statement> {
     private final Map<TokenType, Function<TokenStream, ParseResult<Statement>>> statementParsers =
             Map.of(
                     TokenType.LET, this::parseVariableDeclaration,
+                    TokenType.CONST, this::parseVariableDeclaration,
                     TokenType.PRINTLN, this::parsePrintln,
                     TokenType.IDENTIFIER, this::parseAssignment);
 
@@ -96,9 +97,11 @@ final class StatementIterator implements Iterator<Statement> {
     }
 
     private ParseResult<Statement> parseVariableDeclaration(TokenStream tokens) {
-        ParseResult<Token> let = expect(tokens, TokenType.LET, "Expected 'let'");
+        Token keyword = peek(tokens); // LET or CONST, guaranteed by the statementParsers dispatch
+        boolean isConstant = keyword.type() == TokenType.CONST;
+        ParseResult<Token> keywordResult = advance(tokens);
         ParseResult<Token> name =
-                expect(let.rest(), TokenType.IDENTIFIER, "Expected a variable name");
+                expect(keywordResult.rest(), TokenType.IDENTIFIER, "Expected a variable name");
         ParseResult<Token> colon =
                 expect(name.rest(), TokenType.COLON, "Expected ':' after variable name");
         ParseResult<Token> type =
@@ -119,8 +122,9 @@ final class StatementIterator implements Iterator<Statement> {
                 new VariableDeclarationStatement(
                         name.node().lexeme(),
                         type.node().lexeme(),
+                        isConstant,
                         initializer,
-                        let.node().start(),
+                        keyword.start(),
                         semicolon.node().end());
         return new ParseResult<>(declaration, semicolon.rest());
     }
