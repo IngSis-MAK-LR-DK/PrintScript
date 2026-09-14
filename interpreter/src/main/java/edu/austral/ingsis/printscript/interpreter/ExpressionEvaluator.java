@@ -1,5 +1,7 @@
 package edu.austral.ingsis.printscript.interpreter;
 
+import java.util.Optional;
+
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
@@ -7,15 +9,24 @@ import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
 /** Walks an expression and computes its runtime value. */
 final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     private final Environment environment;
+    private final InputProvider inputProvider;
+    private final EnvironmentReader environmentReader;
 
-    ExpressionEvaluator(Environment environment) {
+    ExpressionEvaluator(
+            Environment environment,
+            InputProvider inputProvider,
+            EnvironmentReader environmentReader) {
         this.environment = environment;
+        this.inputProvider = inputProvider;
+        this.environmentReader = environmentReader;
     }
 
     @Override
@@ -59,6 +70,41 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
                         + "' requires operands of type number",
                 expression.start(),
                 expression.end());
+    }
+
+    /**
+     * Always a raw {@code String} - see {@link ReadInputExpression}'s javadoc for why coercion
+     * happens elsewhere, not here.
+     */
+    @Override
+    public Object visitReadInput(ReadInputExpression expression) {
+        String prompt = stringify(expression.message().accept(this));
+        try {
+            return inputProvider.read(prompt);
+        } catch (RuntimeException e) {
+            throw new SemanticException(
+                    "readInput(...) failed: " + e.getMessage(),
+                    expression.start(),
+                    expression.end());
+        }
+    }
+
+    @Override
+    public Object visitReadEnv(ReadEnvExpression expression) {
+        String name = stringify(expression.variableName().accept(this));
+        Optional<String> value;
+        try {
+            value = environmentReader.read(name);
+        } catch (RuntimeException e) {
+            throw new SemanticException(
+                    "readEnv(...) failed: " + e.getMessage(), expression.start(), expression.end());
+        }
+        return value.orElseThrow(
+                () ->
+                        new SemanticException(
+                                "Environment variable '" + name + "' is not set",
+                                expression.start(),
+                                expression.end()));
     }
 
     static String stringify(Object value) {

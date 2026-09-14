@@ -4,8 +4,11 @@ import java.util.List;
 
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
+import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -20,12 +23,14 @@ final class StatementExecutor implements StatementVisitor<Environment> {
 
     private final Environment environment;
     private final ExpressionEvaluator evaluator;
-    private final Emitter emitter;
+    private final ExecutionContext context;
 
-    StatementExecutor(Environment environment, Emitter emitter) {
+    StatementExecutor(Environment environment, ExecutionContext context) {
         this.environment = environment;
-        this.evaluator = new ExpressionEvaluator(environment);
-        this.emitter = emitter;
+        this.evaluator =
+                new ExpressionEvaluator(
+                        environment, context.inputProvider(), context.environmentReader());
+        this.context = context;
     }
 
     @Override
@@ -44,21 +49,22 @@ final class StatementExecutor implements StatementVisitor<Environment> {
                         statement.start());
         return statement
                 .initializer()
-                .map(initializer -> initializer.accept(evaluator))
+                .map(initializer -> evaluateForAssignment(initializer, statement.typeName()))
                 .map(value -> declared.assign(statement.identifierName(), value, statement.start()))
                 .orElse(declared);
     }
 
     @Override
     public Environment visitAssignment(AssignmentStatement statement) {
-        Object value = statement.value().accept(evaluator);
+        String declaredType = environment.typeOf(statement.identifierName(), statement.start());
+        Object value = evaluateForAssignment(statement.value(), declaredType);
         return environment.assign(statement.identifierName(), value, statement.start());
     }
 
     @Override
     public Environment visitPrintln(PrintlnStatement statement) {
         Object value = statement.argument().accept(evaluator);
-        emitter.emit(ExpressionEvaluator.stringify(value));
+        context.emitter().emit(ExpressionEvaluator.stringify(value));
         return environment;
     }
 
@@ -78,8 +84,58 @@ final class StatementExecutor implements StatementVisitor<Environment> {
                 isTrue ? statement.thenBranch() : statement.elseBranch().orElse(List.of());
         Environment current = environment;
         for (Statement inner : branch) {
-            current = inner.accept(new StatementExecutor(current, emitter));
+            current = inner.accept(new StatementExecutor(current, context));
         }
         return current;
+    }
+
+    /**
+     * Evaluates {@code expression} for use as the value of a declaration/assignment. {@code
+     * readInput}/{@code readEnv} always evaluate to a raw {@code String} (see their javadoc); if
+     * {@code expression} is <em>directly</em> one of those two node types, the raw string gets
+     * coerced here to {@code declaredType} - a deliberately shallow, AST-shape check. Nested usage
+     * inside a larger expression (e.g. {@code readInput(...) + 1}) is out of scope: it falls
+     * through to ordinary binary-expression semantics, surfacing as the existing generic
+     * type-mismatch error if the result doesn't happen to already match the declared type.
+     */
+    private Object evaluateForAssignment(Expression expression, String declaredType) {
+        Object raw = expression.accept(evaluator);
+        if (expression instanceof ReadInputExpression || expression instanceof ReadEnvExpression) {
+            return coerce((String) raw, declaredType, expression);
+        }
+        return raw;
+    }
+
+    private Object coerce(String raw, String declaredType, Expression expression) {
+        return switch (declaredType) {
+            case "number" -> parseNumber(raw, expression);
+            case "boolean" -> parseBoolean(raw, expression);
+            default -> raw; // "string", or an already-invalid type Environment.declare will reject
+        };
+    }
+
+    private Object parseNumber(String raw, Expression expression) {
+        try {
+            return Double.parseDouble(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new SemanticException(
+                    "Value read at runtime ('" + raw + "') is not a valid 'number'",
+                    expression.start(),
+                    expression.end());
+        }
+    }
+
+    private Object parseBoolean(String raw, Expression expression) {
+        String trimmed = raw.trim();
+        if (trimmed.equals("true")) {
+            return Boolean.TRUE;
+        }
+        if (trimmed.equals("false")) {
+            return Boolean.FALSE;
+        }
+        throw new SemanticException(
+                "Value read at runtime ('" + raw + "') is not a valid 'boolean'",
+                expression.start(),
+                expression.end());
     }
 }

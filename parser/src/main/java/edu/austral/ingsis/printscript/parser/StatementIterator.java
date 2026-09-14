@@ -22,6 +22,8 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -40,6 +42,7 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * ifStatement := "if" "(" IDENTIFIER ")" "{" statement* "}" ("else" "{" statement* "}")?
  * expression  := primary (OPERATOR primary)*
  * primary     := NUMBER | STRING | BOOLEAN | IDENTIFIER | "(" expression ")"
+ *              | "readInput" "(" expression ")" | "readEnv" "(" expression ")"
  * </pre>
  *
  * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
@@ -305,6 +308,42 @@ final class StatementIterator implements Iterator<Statement> {
                                 TokenType.RIGHT_PAREN,
                                 "Expected ')' to close expression");
                 return new ParseResult<>(inner.node(), rightParen.rest());
+            }
+            case READ_INPUT -> {
+                ParseResult<Token> consumed = advance(tokens);
+                ParseResult<Token> leftParen =
+                        expect(
+                                consumed.rest(),
+                                TokenType.LEFT_PAREN,
+                                "Expected '(' after 'readInput'");
+                ParseResult<Expression> message = parseExpression(leftParen.rest());
+                ParseResult<Token> rightParen =
+                        expect(
+                                message.rest(),
+                                TokenType.RIGHT_PAREN,
+                                "Expected ')' after 'readInput' argument");
+                Expression expression =
+                        new ReadInputExpression(
+                                message.node(), token.start(), rightParen.node().end());
+                return new ParseResult<>(expression, rightParen.rest());
+            }
+            case READ_ENV -> {
+                ParseResult<Token> consumed = advance(tokens);
+                ParseResult<Token> leftParen =
+                        expect(
+                                consumed.rest(),
+                                TokenType.LEFT_PAREN,
+                                "Expected '(' after 'readEnv'");
+                ParseResult<Expression> variableName = parseExpression(leftParen.rest());
+                ParseResult<Token> rightParen =
+                        expect(
+                                variableName.rest(),
+                                TokenType.RIGHT_PAREN,
+                                "Expected ')' after 'readEnv' argument");
+                Expression expression =
+                        new ReadEnvExpression(
+                                variableName.node(), token.start(), rightParen.node().end());
+                return new ParseResult<>(expression, rightParen.rest());
             }
             default ->
                     throw new SyntaxException(

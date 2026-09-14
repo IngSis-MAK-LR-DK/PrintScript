@@ -18,6 +18,8 @@ import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -59,6 +61,14 @@ class VersionValidatorTest {
 
     private static Statement println(Expression argument) {
         return new PrintlnStatement(argument, P, P);
+    }
+
+    private static Expression readInput(Expression message) {
+        return new ReadInputExpression(message, P, P);
+    }
+
+    private static Expression readEnv(Expression variableName) {
+        return new ReadEnvExpression(variableName, P, P);
     }
 
     /**
@@ -129,6 +139,32 @@ class VersionValidatorTest {
     @Test
     void acceptsConstUnder1_1() {
         List<Statement> statements = List.of(constDecl("x", "number", num(1)));
+
+        assertDoesNotThrow(() -> validate(statements, Version.V1_1));
+    }
+
+    @Test
+    void throwsOnReadInputUnder1_0() {
+        List<Statement> statements =
+                List.of(let("name", "string", readInput(new StringLiteralExpression("x", P, P))));
+
+        assertThrows(SyntaxException.class, () -> validate(statements, Version.V1_0));
+    }
+
+    @Test
+    void throwsOnReadEnvUnder1_0() {
+        List<Statement> statements =
+                List.of(let("port", "number", readEnv(new StringLiteralExpression("PORT", P, P))));
+
+        assertThrows(SyntaxException.class, () -> validate(statements, Version.V1_0));
+    }
+
+    @Test
+    void acceptsReadInputAndReadEnvUnder1_1() {
+        List<Statement> statements =
+                List.of(
+                        let("name", "string", readInput(new StringLiteralExpression("x", P, P))),
+                        let("port", "number", readEnv(new StringLiteralExpression("PORT", P, P))));
 
         assertDoesNotThrow(() -> validate(statements, Version.V1_1));
     }

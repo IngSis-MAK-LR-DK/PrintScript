@@ -13,6 +13,8 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -121,6 +123,20 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
     public Void visitBinary(BinaryExpression expression) {
         expression.left().accept(this);
         expression.right().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitReadInput(ReadInputExpression expression) {
+        requireVersion(Version.V1_1, "'readInput'", expression.start(), expression.end());
+        expression.message().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitReadEnv(ReadEnvExpression expression) {
+        requireVersion(Version.V1_1, "'readEnv'", expression.start(), expression.end());
+        expression.variableName().accept(this);
         return null;
     }
 

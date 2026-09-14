@@ -103,6 +103,25 @@ class PrintScriptLexerTest {
     }
 
     @Test
+    void recognizesReadInputAndReadEnvKeywords() {
+        List<Token> tokens = tokenize("readInput(\"prompt\") readEnv(\"NAME\")");
+
+        List<TokenType> types = tokens.stream().map(Token::type).toList();
+        assertEquals(
+                List.of(
+                        TokenType.READ_INPUT,
+                        TokenType.LEFT_PAREN,
+                        TokenType.STRING_LITERAL,
+                        TokenType.RIGHT_PAREN,
+                        TokenType.READ_ENV,
+                        TokenType.LEFT_PAREN,
+                        TokenType.STRING_LITERAL,
+                        TokenType.RIGHT_PAREN,
+                        TokenType.EOF),
+                types);
+    }
+
+    @Test
     void recognizesPrintlnKeywordAndParens() {
         List<Token> tokens = tokenize("println(a);");
 

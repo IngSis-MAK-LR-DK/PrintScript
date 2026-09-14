@@ -20,6 +20,8 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -82,6 +84,14 @@ class PrintScriptInterpreterTest {
         return new PrintlnStatement(argument, P, P);
     }
 
+    private static Expression readInput(Expression message) {
+        return new ReadInputExpression(message, P, P);
+    }
+
+    private static Expression readEnv(Expression variableName) {
+        return new ReadEnvExpression(variableName, P, P);
+    }
+
     private static IdentifierExpression condition(String name) {
         return new IdentifierExpression(name, P, P);
     }
@@ -97,8 +107,17 @@ class PrintScriptInterpreterTest {
     }
 
     private String run(Statement... statements) {
+        return run(InputProvider.unsupported(), EnvironmentReader.unsupported(), statements);
+    }
+
+    private String run(
+            InputProvider inputProvider,
+            EnvironmentReader environmentReader,
+            Statement... statements) {
         List<String> lines = new ArrayList<>();
-        interpreter.interpret(List.of(statements).iterator(), lines::add);
+        interpreter.interpret(
+                List.of(statements).iterator(),
+                new ExecutionContext(lines::add, inputProvider, environmentReader));
         return lines.isEmpty() ? "" : String.join("\n", lines) + "\n";
     }
 
@@ -310,6 +329,105 @@ class PrintScriptInterpreterTest {
         String output = run(println(modulo7by3));
 
         assertEquals("1\n", output);
+    }
+
+    @Test
+    void readInputCoercesToTheDeclaredStringType() {
+        // let name: string = readInput("Your name:");
+        // println(name);
+        String output =
+                run(
+                        prompt -> "Ada",
+                        EnvironmentReader.unsupported(),
+                        let("name", "string", readInput(str("Your name:"))),
+                        println(id("name")));
+
+        assertEquals("Ada\n", output);
+    }
+
+    @Test
+    void readInputCoercesToTheDeclaredNumberType() {
+        // let age: number = readInput("Your age:");
+        // println(age);
+        String output =
+                run(
+                        prompt -> "42",
+                        EnvironmentReader.unsupported(),
+                        let("age", "number", readInput(str("Your age:"))),
+                        println(id("age")));
+
+        assertEquals("42\n", output);
+    }
+
+    @Test
+    void readInputCoercesToTheDeclaredBooleanType() {
+        // let flag: boolean = readInput("Ready?");
+        // println(flag);
+        String output =
+                run(
+                        prompt -> "true",
+                        EnvironmentReader.unsupported(),
+                        let("flag", "boolean", readInput(str("Ready?"))),
+                        println(id("flag")));
+
+        assertEquals("true\n", output);
+    }
+
+    @Test
+    void throwsWhenReadInputValueIsNotAValidNumber() {
+        // let age: number = readInput("Your age:");
+        assertThrows(
+                SemanticException.class,
+                () ->
+                        run(
+                                prompt -> "not-a-number",
+                                EnvironmentReader.unsupported(),
+                                let("age", "number", readInput(str("Your age:")))));
+    }
+
+    @Test
+    void readEnvCoercesToTheDeclaredType() {
+        // let port: number = readEnv("PORT");
+        // println(port);
+        String output =
+                run(
+                        InputProvider.unsupported(),
+                        name -> Optional.of("8080"),
+                        let("port", "number", readEnv(str("PORT"))),
+                        println(id("port")));
+
+        assertEquals("8080\n", output);
+    }
+
+    @Test
+    void throwsWhenReadEnvVariableIsNotSet() {
+        // let port: number = readEnv("PORT");
+        assertThrows(
+                SemanticException.class,
+                () ->
+                        run(
+                                InputProvider.unsupported(),
+                                name -> Optional.empty(),
+                                let("port", "number", readEnv(str("PORT")))));
+    }
+
+    @Test
+    void nestedReadInputInsideABinaryExpressionIsNotCoercedAndStaysAString() {
+        // let greeting: string = "Hi " + readInput("Name:");
+        // out of scope for coercion - readInput only coerces when it's the direct
+        // initializer/value, so nested usage stays a raw string, which happens to be fine here
+        // since the declared type is also "string".
+        String output =
+                run(
+                        prompt -> "Ada",
+                        EnvironmentReader.unsupported(),
+                        let(
+                                "greeting",
+                                "string",
+                                binary(str("Hi "), CoreOperators.PLUS, readInput(str("Name:")))),
+                        println(id("greeting")));
+
+        assertEquals("Hi Ada\n", output);
     }
 
     private static OperatorDefinition stubModuloOperator() {

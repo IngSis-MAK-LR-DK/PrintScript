@@ -23,6 +23,8 @@ class VisitorDispatchTest {
         Expression bool = new BooleanLiteralExpression(true, P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
         Expression binary = new BinaryExpression(number, stubOperator(), number, P, P);
+        Expression readInput = new ReadInputExpression(string, P, P);
+        Expression readEnv = new ReadEnvExpression(string, P, P);
 
         ExpressionVisitor<String> visitor =
                 new ExpressionVisitor<>() {
@@ -50,6 +52,16 @@ class VisitorDispatchTest {
                     public String visitBinary(BinaryExpression expression) {
                         return "binary";
                     }
+
+                    @Override
+                    public String visitReadInput(ReadInputExpression expression) {
+                        return "readInput";
+                    }
+
+                    @Override
+                    public String visitReadEnv(ReadEnvExpression expression) {
+                        return "readEnv";
+                    }
                 };
 
         assertEquals("number", number.accept(visitor));
@@ -57,6 +69,8 @@ class VisitorDispatchTest {
         assertEquals("boolean", bool.accept(visitor));
         assertEquals("identifier", identifier.accept(visitor));
         assertEquals("binary", binary.accept(visitor));
+        assertEquals("readInput", readInput.accept(visitor));
+        assertEquals("readEnv", readEnv.accept(visitor));
     }
 
     private static OperatorDefinition stubOperator() {

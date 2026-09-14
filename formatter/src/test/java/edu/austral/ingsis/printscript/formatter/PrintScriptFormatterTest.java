@@ -18,6 +18,8 @@ import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -67,6 +69,14 @@ class PrintScriptFormatterTest {
 
     private static Statement println(Expression argument) {
         return new PrintlnStatement(argument, P, P);
+    }
+
+    private static Expression readInput(Expression message) {
+        return new ReadInputExpression(message, P, P);
+    }
+
+    private static Expression readEnv(Expression variableName) {
+        return new ReadEnvExpression(variableName, P, P);
     }
 
     private static IdentifierExpression condition(String name) {
@@ -268,6 +278,24 @@ class PrintScriptFormatterTest {
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
         assertEquals(0, config.indentSize());
+    }
+
+    @Test
+    void formatsReadInputAndReadEnvCalls() {
+        // let name: string = readInput("Your name:");
+        // let port: number = readEnv("PORT");
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        String result =
+                format(
+                        config,
+                        let("name", "string", readInput(str("Your name:"))),
+                        let("port", "number", readEnv(str("PORT"))));
+
+        assertEquals(
+                "let name: string = readInput(\"Your name:\");\n"
+                        + "let port: number = readEnv(\"PORT\");\n",
+                result);
     }
 
     @Test

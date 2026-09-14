@@ -7,6 +7,8 @@ public enum TokenType {
     PRINTLN,
     IF,
     ELSE,
+    READ_INPUT,
+    READ_ENV,
 
     // Literals and identifiers
     IDENTIFIER,

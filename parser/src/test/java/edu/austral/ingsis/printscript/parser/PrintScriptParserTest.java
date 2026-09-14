@@ -24,6 +24,8 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -472,6 +474,95 @@ class PrintScriptParserTest {
                                 token(TokenType.RIGHT_PAREN, ")"),
                                 token(TokenType.LEFT_BRACE, "{"),
                                 token(TokenType.RIGHT_BRACE, "}"),
+                                EOF));
+    }
+
+    @Test
+    void parsesReadInputUnder1_1() {
+        // let name: string = readInput("Your name:");
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.LET, "let"),
+                                token(TokenType.IDENTIFIER, "name"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "string"),
+                                token(TokenType.EQUALS, "="),
+                                token(TokenType.READ_INPUT, "readInput"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.STRING_LITERAL, "Your name:"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var declaration = assertInstanceOf(VariableDeclarationStatement.class, statements.get(0));
+        var readInput =
+                assertInstanceOf(ReadInputExpression.class, declaration.initializer().get());
+        assertInstanceOf(StringLiteralExpression.class, readInput.message());
+    }
+
+    @Test
+    void parsesReadEnvUnder1_1() {
+        // let port: number = readEnv("PORT");
+        PrintScriptParser v1_1Parser = new PrintScriptParser(Set.of(), Version.V1_1);
+        List<Statement> statements = new ArrayList<>();
+        v1_1Parser
+                .parse(
+                        tokenStreamOf(
+                                token(TokenType.LET, "let"),
+                                token(TokenType.IDENTIFIER, "port"),
+                                token(TokenType.COLON, ":"),
+                                token(TokenType.IDENTIFIER, "number"),
+                                token(TokenType.EQUALS, "="),
+                                token(TokenType.READ_ENV, "readEnv"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.STRING_LITERAL, "PORT"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF))
+                .forEachRemaining(statements::add);
+
+        var declaration = assertInstanceOf(VariableDeclarationStatement.class, statements.get(0));
+        var readEnv = assertInstanceOf(ReadEnvExpression.class, declaration.initializer().get());
+        assertInstanceOf(StringLiteralExpression.class, readEnv.variableName());
+    }
+
+    @Test
+    void throwsOnReadInputUnder1_0() {
+        // println(readInput("x"));  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.PRINTLN, "println"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.READ_INPUT, "readInput"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.STRING_LITERAL, "x"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
+                                EOF));
+    }
+
+    @Test
+    void throwsOnReadEnvUnder1_0() {
+        // println(readEnv("x"));  -- parser defaults to 1.0
+        assertThrows(
+                SyntaxException.class,
+                () ->
+                        parse(
+                                token(TokenType.PRINTLN, "println"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.READ_ENV, "readEnv"),
+                                token(TokenType.LEFT_PAREN, "("),
+                                token(TokenType.STRING_LITERAL, "x"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.RIGHT_PAREN, ")"),
+                                token(TokenType.SEMICOLON, ";"),
                                 EOF));
     }
 
