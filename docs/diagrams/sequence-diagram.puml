@@ -8,14 +8,18 @@ participant "ModuloOperator\n(plugins:modulo-operator)" as Plugin
 participant "ExecutionCommand" as Cmd
 participant "Pipeline" as Pipeline
 participant "Lexer\n(PrintScriptLexer)" as Lexer
-participant "Parser\n(PrintScriptParser)" as Parser
+participant "Parser\n(StatementIterator)" as StmtIter
+participant "VersionValidator" as Version
 participant "Interpreter\n(PrintScriptInterpreter)" as Interp
+participant "StatementExecutor" as Exec
+participant "InputProvider\n(StdInInputProvider)" as StdIn
+participant "EnvironmentReader\n(SystemEnvironmentReader)" as EnvReader
 
 Usuario -> Main: main(args)
 activate Main
 
 Main -> Args: parse(args)
-Args --> Main: CliArguments
+Args --> Main: CliArguments\n(operation, file, version, config)
 
 Main -> SPI: load(OperatorDefinition.class)
 activate SPI
@@ -28,7 +32,7 @@ end note
 SPI --> Main: Set<OperatorDefinition>
 deactivate SPI
 
-Main -> Main: commandFor(arguments)\n(crea Lexer/Parser con los operadores\ndescubiertos, Pipeline, Command)
+Main -> Main: commandFor(arguments)\n(crea Lexer/Parser(operators, version), Pipeline,\nStdInInputProvider, SystemEnvironmentReader, Command)
 
 Main -> Cmd: run(arguments)
 activate Cmd
@@ -38,25 +42,28 @@ activate Pipeline
 Pipeline -> Pipeline: new FilePositionalSource(file, reporter::reachedOffset)\n(lectura posicional, no un Reader secuencial)
 Pipeline -> Lexer: tokenize(source)
 Lexer --> Pipeline: TokenStream\n(el primer token ya está escaneado;\nel resto es perezoso vía tail())
-Pipeline -> Parser: parse(tokens)
-Parser --> Pipeline: Iterator<Statement> (lazy)
+Pipeline -> StmtIter: parse(tokens)\n(PrintScriptParser)
+StmtIter --> Pipeline: Iterator<Statement>\n(envuelto por VersionValidator.validating(...))
 Pipeline --> Cmd: Iterator<Statement> (con progreso;\ncierra FilePositionalSource al agotarse)
 deactivate Pipeline
 
-Cmd -> Interp: interpret(statements, System.out)
+Cmd -> Cmd: new ExecutionContext(\n  System.out::println, stdInInputProvider, systemEnvironmentReader)
+Cmd -> Interp: interpret(statements, context)
 activate Interp
 
 loop mientras statements.hasNext()
-  Interp -> Parser: statements.next()
-  activate Parser
-  note right of Parser
-    PeekableTokenStream reasigna su
-    cursor (stream = stream.tail())
-    hasta completar UN statement.
-    Nunca destruye el TokenStream
-    anterior, solo deja de apuntarlo.
+  Interp -> Version: statements.next()
+  activate Version
+  Version -> StmtIter: statements.next()
+  activate StmtIter
+  note right of StmtIter
+    Arma el statement encadenando
+    ParseResult<T> (nodo + TokenStream
+    restante); pide más tokens al Lexer
+    tirando de stream.tail() según hace
+    falta, nunca todos de una.
   end note
-  Parser -> Lexer: stream.tail() (una o más veces)
+  StmtIter -> Lexer: stream.tail() (una o más veces)
   activate Lexer
   note right of Lexer
     TokenScanner lee code points por
@@ -64,13 +71,37 @@ loop mientras statements.hasNext()
     StringPositionalSource) hasta
     completar UN token nuevo
   end note
-  Lexer --> Parser: TokenStream (nuevo nodo)
+  Lexer --> StmtIter: TokenStream (nuevo nodo)
   deactivate Lexer
-  Parser --> Interp: Statement
-  deactivate Parser
+  StmtIter --> Version: Statement
+  deactivate StmtIter
+  Version -> Version: statement.accept(this)\n(chequea la versión activa recién ahora,\nun statement a la vez - nunca antes de next())
+  Version --> Interp: Statement
+  deactivate Version
 
-  Interp -> Interp: statement.accept(StatementExecutor)
-  Interp -> "System.out": println(valor) (si es PrintlnStatement)
+  Interp -> Exec: statement.accept(\n  new StatementExecutor(environment, context))
+  activate Exec
+
+  alt PrintlnStatement
+    Exec -> "context.emitter()": emit(valor)
+  else VariableDeclarationStatement / AssignmentStatement\ncon readInput(...) o readEnv(...)
+    Exec -> StdIn: context.inputProvider().read(prompt)
+    activate StdIn
+    StdIn -> Usuario: imprime el prompt y lee una línea (Scanner)
+    Usuario --> StdIn: línea tipeada
+    StdIn --> Exec: String
+    deactivate StdIn
+    Exec -> EnvReader: context.environmentReader().read(nombre)
+    activate EnvReader
+    EnvReader --> Exec: Optional<String>\n(vacío -> SemanticException)
+    deactivate EnvReader
+    Exec -> Exec: coerce(raw, tipoDeclarado)\n(solo si la expresión ES DIRECTAMENTE\nel inicializador/valor - no si está anidada)
+  else IfStatement
+    Exec -> Exec: evalúa la condición (debe ser\nuna variable boolean) y ejecuta\nthenBranch o elseBranch recursivamente\n(mismo Environment, sin scoping propio)
+  end
+
+  Exec --> Interp: Environment (nuevo, inmutable)
+  deactivate Exec
 end
 
 deactivate Interp

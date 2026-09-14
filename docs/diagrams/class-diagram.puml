@@ -6,15 +6,18 @@ package "common" {
   class Token << record >>
   class Position << record >>
   class TokenStream
-  enum ConfigFormat
-  interface "ConfigLoader<T>" as ConfigLoader
+  enum Version
   interface OperatorDefinition
+  class OperatorPrecedence
+  class OperatorPrecedenceResolver
+  class CoreOperators
 
   Token --> TokenType
   Token --> Position
   TokenStream --> Token : head()
   TokenStream ..> TokenStream : tail()\n(cons-list inmutable, sin memoizar)
-  ConfigLoader ..> ConfigFormat : load(Reader, format)
+  CoreOperators ..> OperatorDefinition : indexBySymbol(extensionOperators)
+  OperatorPrecedenceResolver ..> OperatorPrecedence : resolveLevels(operators)
 
   abstract class PrintScriptException
   PrintScriptException <|-- LexicalException
@@ -28,7 +31,6 @@ package "common" {
     interface Expression
     interface StatementVisitor<R>
     interface ExpressionVisitor<R>
-    enum BinaryOperator
 
     ASTNode <|-- Statement
     ASTNode <|-- Expression
@@ -36,16 +38,31 @@ package "common" {
     Statement <|.. VariableDeclarationStatement
     Statement <|.. AssignmentStatement
     Statement <|.. PrintlnStatement
+    Statement <|.. IfStatement
 
     Expression <|.. NumberLiteralExpression
     Expression <|.. StringLiteralExpression
+    Expression <|.. BooleanLiteralExpression
     Expression <|.. IdentifierExpression
     Expression <|.. BinaryExpression
-    Expression <|.. ExtendedBinaryExpression
+    Expression <|.. ReadInputExpression
+    Expression <|.. ReadEnvExpression
 
-    BinaryExpression --> BinaryOperator : operator
-    ExtendedBinaryExpression --> OperatorDefinition : operator
+    BinaryExpression --> OperatorDefinition : operator
+    IfStatement --> IdentifierExpression : condition
+    note right of IfStatement
+      thenBranch/elseBranch son List<Statement>;
+      sin scoping propio - una declaración
+      adentro del bloque queda visible
+      después (mismo Environment threadeado).
+    end note
   }
+}
+
+package "config" {
+  enum ConfigFormat
+  interface "ConfigLoader<T>" as ConfigLoader
+  ConfigLoader ..> ConfigFormat : load(Reader, format)
 }
 
 package "lexer" {
@@ -54,6 +71,7 @@ package "lexer" {
   class FilePositionalSource
   class Cursor
   class TokenScanner
+  class CoreKeywords
   interface Lexer
   class PrintScriptLexer
 
@@ -70,6 +88,7 @@ package "lexer" {
   PrintScriptLexer ..> TokenScanner : crea
   TokenScanner --> Cursor : threading inmutable\n(line, column, offset)
   TokenScanner ..> PositionalSource : readAt(offset)
+  TokenScanner ..> CoreKeywords : Map<String,TokenType>\n(let/const/if/else/readInput/readEnv/...)
   TokenScanner ..> TokenStream : produce
   TokenScanner ..> OperatorDefinition : Map<String,OperatorDefinition>\n(inyectado, opcional)
 }
@@ -78,27 +97,78 @@ package "parser" {
   interface Parser
   class PrintScriptParser
   class StatementIterator
-  class PeekableTokenStream
+  class VersionValidator
+  class "ParseResult<T>" as ParseResult
+
   Parser <|.. PrintScriptParser
+  PrintScriptParser --> Version
   PrintScriptParser ..> StatementIterator : crea
-  StatementIterator --> PeekableTokenStream
-  PeekableTokenStream --> TokenStream : cursor\n(reasignado, nunca destructivo)
-  StatementIterator ..> OperatorDefinition : arma ExtendedBinaryExpression
+  PrintScriptParser ..> VersionValidator : envuelve el resultado\nen validating(statements)
+  StatementIterator ..> ParseResult : "nodo parseado + TokenStream\nrestante (par inmutable)"
+  StatementIterator ..> OperatorDefinition : arma BinaryExpression\ncon la precedencia resuelta
+  VersionValidator ..|> StatementVisitor
+  VersionValidator ..|> ExpressionVisitor
+  note right of VersionValidator
+    Envuelve el Iterator<Statement> del
+    parser: valida perezosamente, un
+    statement a la vez, recién al pedir
+    next() (mismo principio que
+    TokenStream: nunca buffea todo
+    el programa).
+  end note
 }
 
 package "interpreter" {
   interface Interpreter
+  interface SemanticAnalyzer
+  interface Emitter
+  interface InputProvider
+  interface EnvironmentReader
+  class "ExecutionContext" as ExecutionContext << record >>
   class PrintScriptInterpreter
+  class PrintScriptSemanticAnalyzer
   class Environment
   class ExpressionEvaluator
   class StatementExecutor
+  class RuntimeValueCoercer
+
   Interpreter <|.. PrintScriptInterpreter
+  SemanticAnalyzer <|.. PrintScriptSemanticAnalyzer
+  PrintScriptSemanticAnalyzer ..> PrintScriptInterpreter : delega (output descartado,\nreadInput/readEnv unsupported())
   StatementExecutor ..|> StatementVisitor
   ExpressionEvaluator ..|> ExpressionVisitor
   PrintScriptInterpreter --> Environment
   PrintScriptInterpreter --> StatementExecutor
+  PrintScriptInterpreter ..> ExecutionContext : recibe
   StatementExecutor --> ExpressionEvaluator
+  StatementExecutor --> ExecutionContext
+  StatementExecutor ..> RuntimeValueCoercer : coerce(raw, tipoDeclarado)
   ExpressionEvaluator --> Environment
+  ExpressionEvaluator --> InputProvider
+  ExpressionEvaluator --> EnvironmentReader
+  ExecutionContext --> Emitter
+  ExecutionContext --> InputProvider
+  ExecutionContext --> EnvironmentReader
+  note right of ExecutionContext
+    Agrupa las 3 capacidades que
+    interpret() necesita, para que su
+    firma no siga creciendo a medida
+    que se agregan más (println/
+    readInput/readEnv).
+  end note
+  note right of RuntimeValueCoercer
+    readInput/readEnv siempre evalúan
+    a String crudo (ExpressionEvaluator);
+    esta clase lo coerciona al tipo
+    declarado - separado de
+    StatementExecutor a propósito
+    (parsear texto externo no es lo
+    mismo que ejecutar un statement).
+    StatementExecutor solo la llama
+    cuando la expresión ES DIRECTAMENTE
+    el inicializador/valor de una
+    declaración/asignación.
+  end note
 }
 
 package "formatter" {
@@ -108,32 +178,89 @@ package "formatter" {
   class ExpressionFormatter
   class FormatterConfig << record >>
   class FormatterConfigLoader
+  class "RawFormatterConfig" as RawFormatterConfig << record >>
   Formatter <|.. PrintScriptFormatter
   ConfigLoader <|.. FormatterConfigLoader
-  FormatterConfigLoader ..> FormatterConfig : produce
+  FormatterConfigLoader ..> RawFormatterConfig : "1) Jackson deserializa acá\n(campos boxed: null = ausente)"
+  RawFormatterConfig ..> FormatterConfig : "2) resolve() - cada null\nse completa con\nFormatterConfig.defaultConfig()"
   StatementFormatter ..|> StatementVisitor
   ExpressionFormatter ..|> ExpressionVisitor
   PrintScriptFormatter --> StatementFormatter
   StatementFormatter --> ExpressionFormatter
   StatementFormatter --> FormatterConfig
+  note right of StatementFormatter
+    visitIf reindenta cada línea del
+    bloque interno (config.indentSize());
+    compone para if anidados.
+  end note
+  note right of RawFormatterConfig
+    Jackson deserializa un record
+    SIEMPRE por su constructor canónico,
+    nunca por uno de compatibilidad -
+    un campo ausente en el YAML/JSON
+    daría el default crudo de Java
+    (false/0), no el default real de
+    defaultConfig(). RawFormatterConfig
+    usa tipos boxed para que "ausente"
+    (null) se pueda distinguir de un
+    valor explícito, y resolve() es el
+    único lugar que traduce eso al
+    default de verdad.
+  end note
 }
 
 package "analyzer" {
   interface Analyzer
   class PrintScriptAnalyzer
-  class RuleChecker
+  interface AnalysisRule
+  class IdentifierCaseRule
+  class PrintlnArgumentRule
+  class ReadArgumentRule
   class AnalyzerConfig << record >>
   class AnalyzerConfigLoader
+  class "RawAnalyzerConfig" as RawAnalyzerConfig << record >>
   class AnalysisFinding << record >>
   enum IdentifierCase
+
   Analyzer <|.. PrintScriptAnalyzer
   ConfigLoader <|.. AnalyzerConfigLoader
-  AnalyzerConfigLoader ..> AnalyzerConfig : produce
+  AnalyzerConfigLoader ..> RawAnalyzerConfig : "1) Jackson deserializa acá\n(campos boxed: null = ausente)"
+  RawAnalyzerConfig ..> AnalyzerConfig : "2) resolve() - cada null\nse completa con\nAnalyzerConfig.defaultConfig()"
   AnalyzerConfig --> IdentifierCase
-  RuleChecker ..|> StatementVisitor
-  RuleChecker --> AnalyzerConfig
-  RuleChecker ..> AnalysisFinding : produce
-  PrintScriptAnalyzer --> RuleChecker
+  AnalyzerConfig ..> AnalysisRule : toRules()
+  AnalysisRule <|.. IdentifierCaseRule
+  AnalysisRule <|.. PrintlnArgumentRule
+  AnalysisRule <|.. ReadArgumentRule
+  PrintScriptAnalyzer ..> AnalysisRule : aplica cada regla\npor statement
+  PrintScriptAnalyzer ..> AnalysisFinding : produce
+  note right of PrintScriptAnalyzer
+    Recorre statements a mano; si es un
+    IfStatement, recursa en thenBranch/
+    elseBranch para que una violación
+    adentro de un bloque también
+    se reporte.
+  end note
+  note right of ReadArgumentRule
+    A diferencia de PrintlnArgumentRule
+    (mira solo el argumento directo),
+    recorre todo el árbol de expresión
+    del statement buscando llamadas a
+    readInput/readEnv.
+  end note
+  note right of RawAnalyzerConfig
+    Jackson deserializa un record
+    SIEMPRE por su constructor canónico,
+    nunca por uno de compatibilidad -
+    un campo ausente en el YAML/JSON
+    daría el default crudo de Java
+    (false), no el default real de
+    defaultConfig(). RawAnalyzerConfig
+    usa tipos boxed para que "ausente"
+    (null) se pueda distinguir de un
+    valor explícito, y resolve() es el
+    único lugar que traduce eso al
+    default de verdad.
+  end note
 }
 
 package "plugins.modulo-operator" {
@@ -160,26 +287,37 @@ package "cli" {
   class ConfigFiles
   class ProgressReporter
   class ProgressReportingIterator
+  class StdInInputProvider
+  class SystemEnvironmentReader
 
   Command <|.. ValidationCommand
   Command <|.. ExecutionCommand
   Command <|.. FormattingCommand
   Command <|.. AnalyzingCommand
 
+  InputProvider <|.. StdInInputProvider
+  EnvironmentReader <|.. SystemEnvironmentReader
+
   CliArguments --> Operation
+  CliArguments --> Version
 
   Main ..> CliArguments : parse(args)
   Main ..> CliUsageException : catch
   Main ..> Command : crea e invoca
   Main ..> Lexer : new PrintScriptLexer(operators)
-  Main ..> Parser : new PrintScriptParser(operators)
+  Main ..> Parser : new PrintScriptParser(operators, version)
+  Main ..> StdInInputProvider : crea
+  Main ..> SystemEnvironmentReader : crea
   Main ..> OperatorDefinition : ServiceLoader.load(...)
   Main .[#b30000].> ModuloOperator : descubierto en runtime\n(runtimeOnly, sin dependencia\nde compilación)
 
   ValidationCommand --> Pipeline
-  ValidationCommand --> Interpreter
+  ValidationCommand --> SemanticAnalyzer
   ExecutionCommand --> Pipeline
   ExecutionCommand --> Interpreter
+  ExecutionCommand --> InputProvider
+  ExecutionCommand --> EnvironmentReader
+  ExecutionCommand ..> ExecutionContext : arma (System.out::println\n+ inputProvider + environmentReader)
   FormattingCommand --> Pipeline
   FormattingCommand --> Formatter
   FormattingCommand --> ConfigLoader

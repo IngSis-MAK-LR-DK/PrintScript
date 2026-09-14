@@ -263,10 +263,11 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    void indentSizeDefaultsToZeroWhenOmittedFromYaml() {
-        // Jackson deserializes records through the canonical (all-fields) constructor, never
-        // through an auxiliary one - so a field missing from the YAML gets Java's own default for
-        // its type (0 for an int), not whatever defaultConfig()/the compatibility constructor use.
+    void indentSizeDefaultsToTheDomainDefaultWhenOmittedFromYaml() {
+        // FormatterConfigLoader deserializes into RawFormatterConfig first (every field boxed, so
+        // "absent" comes through as null, distinguishable from an explicit 0) and only then
+        // resolves missing fields against FormatterConfig.defaultConfig() - so a field missing
+        // from the YAML falls back to the real default (2), not Java's raw 0.
         String yaml =
                 """
                 spaceBeforeColon: true
@@ -277,7 +278,7 @@ class PrintScriptFormatterTest {
 
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
-        assertEquals(0, config.indentSize());
+        assertEquals(2, config.indentSize());
     }
 
     @Test

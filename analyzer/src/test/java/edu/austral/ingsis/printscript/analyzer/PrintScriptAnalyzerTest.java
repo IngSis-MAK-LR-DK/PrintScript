@@ -182,11 +182,11 @@ class PrintScriptAnalyzerTest {
     }
 
     @Test
-    void readArgumentDefaultsToFalseWhenOmittedFromYaml() {
-        // Jackson always deserializes a record through its canonical constructor, never through
-        // AnalyzerConfig's 3-arg compatibility constructor (whose default is `true`) - so a field
-        // missing from the YAML gets Java's raw `false` default instead. Same gotcha already
-        // documented for FormatterConfig.indentSize.
+    void readArgumentDefaultsToTrueWhenOmittedFromYaml() {
+        // AnalyzerConfigLoader deserializes into RawAnalyzerConfig first (every field boxed, so
+        // "absent" comes through as null, distinguishable from an explicit false) and only then
+        // resolves missing fields against AnalyzerConfig.defaultConfig() - so a field missing from
+        // the YAML falls back to the real default (true), not Java's raw false.
         String yaml =
                 """
                 identifierCaseCheckEnabled: true
@@ -196,7 +196,7 @@ class PrintScriptAnalyzerTest {
 
         AnalyzerConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
-        assertEquals(false, config.readArgumentMustBeIdentifierOrLiteral());
+        assertEquals(true, config.readArgumentMustBeIdentifierOrLiteral());
     }
 
     @Test

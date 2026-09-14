@@ -101,41 +101,8 @@ final class StatementExecutor implements StatementVisitor<Environment> {
     private Object evaluateForAssignment(Expression expression, String declaredType) {
         Object raw = expression.accept(evaluator);
         if (expression instanceof ReadInputExpression || expression instanceof ReadEnvExpression) {
-            return coerce((String) raw, declaredType, expression);
+            return RuntimeValueCoercer.coerce((String) raw, declaredType, expression);
         }
         return raw;
-    }
-
-    private Object coerce(String raw, String declaredType, Expression expression) {
-        return switch (declaredType) {
-            case "number" -> parseNumber(raw, expression);
-            case "boolean" -> parseBoolean(raw, expression);
-            default -> raw; // "string", or an already-invalid type Environment.declare will reject
-        };
-    }
-
-    private Object parseNumber(String raw, Expression expression) {
-        try {
-            return Double.parseDouble(raw.trim());
-        } catch (NumberFormatException e) {
-            throw new SemanticException(
-                    "Value read at runtime ('" + raw + "') is not a valid 'number'",
-                    expression.start(),
-                    expression.end());
-        }
-    }
-
-    private Object parseBoolean(String raw, Expression expression) {
-        String trimmed = raw.trim();
-        if (trimmed.equals("true")) {
-            return Boolean.TRUE;
-        }
-        if (trimmed.equals("false")) {
-            return Boolean.FALSE;
-        }
-        throw new SemanticException(
-                "Value read at runtime ('" + raw + "') is not a valid 'boolean'",
-                expression.start(),
-                expression.end());
     }
 }
