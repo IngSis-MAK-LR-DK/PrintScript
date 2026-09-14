@@ -15,7 +15,12 @@ final class CoreKeywords {
     static final Map<String, TokenType> ALL =
             Map.of(
                     "let", TokenType.LET,
+                    "const", TokenType.CONST,
                     "println", TokenType.PRINTLN,
+                    "if", TokenType.IF,
+                    "else", TokenType.ELSE,
+                    "readInput", TokenType.READ_INPUT,
+                    "readEnv", TokenType.READ_ENV,
                     "true", TokenType.BOOLEAN_LITERAL,
                     "false", TokenType.BOOLEAN_LITERAL);
 

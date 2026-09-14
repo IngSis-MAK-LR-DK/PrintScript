@@ -20,7 +20,7 @@ public final class FormatterConfigLoader implements ConfigLoader<FormatterConfig
     public FormatterConfig load(Reader source, ConfigFormat format) {
         ObjectMapper mapper = format == ConfigFormat.YAML ? yamlMapper : jsonMapper;
         try {
-            return mapper.readValue(source, FormatterConfig.class);
+            return mapper.readValue(source, RawFormatterConfig.class).resolve();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

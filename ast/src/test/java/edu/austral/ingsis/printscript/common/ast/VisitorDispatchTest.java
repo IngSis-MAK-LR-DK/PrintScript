@@ -2,6 +2,7 @@ package edu.austral.ingsis.printscript.common.ast;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import java.util.Optional;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
@@ -22,6 +23,8 @@ class VisitorDispatchTest {
         Expression bool = new BooleanLiteralExpression(true, P, P);
         Expression identifier = new IdentifierExpression("x", P, P);
         Expression binary = new BinaryExpression(number, stubOperator(), number, P, P);
+        Expression readInput = new ReadInputExpression(string, P, P);
+        Expression readEnv = new ReadEnvExpression(string, P, P);
 
         ExpressionVisitor<String> visitor =
                 new ExpressionVisitor<>() {
@@ -49,6 +52,16 @@ class VisitorDispatchTest {
                     public String visitBinary(BinaryExpression expression) {
                         return "binary";
                     }
+
+                    @Override
+                    public String visitReadInput(ReadInputExpression expression) {
+                        return "readInput";
+                    }
+
+                    @Override
+                    public String visitReadEnv(ReadEnvExpression expression) {
+                        return "readEnv";
+                    }
                 };
 
         assertEquals("number", number.accept(visitor));
@@ -56,6 +69,8 @@ class VisitorDispatchTest {
         assertEquals("boolean", bool.accept(visitor));
         assertEquals("identifier", identifier.accept(visitor));
         assertEquals("binary", binary.accept(visitor));
+        assertEquals("readInput", readInput.accept(visitor));
+        assertEquals("readEnv", readEnv.accept(visitor));
     }
 
     private static OperatorDefinition stubOperator() {
@@ -84,6 +99,9 @@ class VisitorDispatchTest {
                 new VariableDeclarationStatement("x", "number", Optional.of(literal), P, P);
         Statement assignment = new AssignmentStatement("x", literal, P, P);
         Statement println = new PrintlnStatement(literal, P, P);
+        Statement ifStatement =
+                new IfStatement(
+                        new IdentifierExpression("flag", P, P), List.of(), Optional.empty(), P, P);
 
         StatementVisitor<String> visitor =
                 new StatementVisitor<>() {
@@ -101,10 +119,16 @@ class VisitorDispatchTest {
                     public String visitPrintln(PrintlnStatement statement) {
                         return "println";
                     }
+
+                    @Override
+                    public String visitIf(IfStatement statement) {
+                        return "if";
+                    }
                 };
 
         assertEquals("declaration", declaration.accept(visitor));
         assertEquals("assignment", assignment.accept(visitor));
         assertEquals("println", println.accept(visitor));
+        assertEquals("if", ifStatement.accept(visitor));
     }
 }

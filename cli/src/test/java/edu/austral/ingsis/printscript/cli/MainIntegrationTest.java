@@ -3,8 +3,10 @@ package edu.austral.ingsis.printscript.cli;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,6 +28,7 @@ class MainIntegrationTest {
 
     private final PrintStream originalOut = System.out;
     private final PrintStream originalErr = System.err;
+    private final InputStream originalIn = System.in;
     private final ByteArrayOutputStream capturedOut = new ByteArrayOutputStream();
     private final ByteArrayOutputStream capturedErr = new ByteArrayOutputStream();
 
@@ -39,6 +42,7 @@ class MainIntegrationTest {
     void restoreStdStreams() {
         System.setOut(originalOut);
         System.setErr(originalErr);
+        System.setIn(originalIn);
     }
 
     private Path writeSource(String content) throws IOException {
@@ -220,6 +224,41 @@ class MainIntegrationTest {
 
         assertEquals(1, exitCode);
         assertTrue(errorOutput().contains("Could not read the source file"));
+    }
+
+    @Test
+    void readInputReadsALineFromStdin() throws IOException {
+        Path source =
+                writeSource(
+                        "let name: string = readInput(\"Your name:\");\nprintln(\"Hi \" + name);");
+        System.setIn(new ByteArrayInputStream("Ada".getBytes(StandardCharsets.UTF_8)));
+
+        Main.main(new String[] {"execution", source.toString(), "--version", "1.1"});
+
+        assertTrue(output().contains("Hi Ada"));
+    }
+
+    @Test
+    void readEnvReadsARealEnvironmentVariable() throws IOException {
+        String value = System.getenv("PATH");
+        Path source = writeSource("let path: string = readEnv(\"PATH\");\nprintln(path);");
+
+        Main.main(new String[] {"execution", source.toString(), "--version", "1.1"});
+
+        assertTrue(output().contains(value));
+    }
+
+    @Test
+    void readEnvFailsWhenVariableIsNotSet() throws IOException {
+        Path source =
+                writeSource(
+                        "let value: string ="
+                                + " readEnv(\"PRINTSCRIPT_TEST_UNSET_VAR_XYZ\");\nprintln(value);");
+
+        int exitCode = Main.run(new String[] {"execution", source.toString(), "--version", "1.1"});
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput().contains("SemanticException"));
     }
 
     @Test

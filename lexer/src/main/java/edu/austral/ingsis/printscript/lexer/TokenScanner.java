@@ -139,6 +139,8 @@ final class TokenScanner {
             case ';' -> TokenType.SEMICOLON;
             case '(' -> TokenType.LEFT_PAREN;
             case ')' -> TokenType.RIGHT_PAREN;
+            case '{' -> TokenType.LEFT_BRACE;
+            case '}' -> TokenType.RIGHT_BRACE;
             default -> null;
         };
     }

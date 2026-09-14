@@ -10,8 +10,11 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
@@ -68,6 +71,9 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
         if (statement.typeName().equals("boolean")) {
             requireVersion(Version.V1_1, "The 'boolean' type", statement.start(), statement.end());
         }
+        if (statement.isConstant()) {
+            requireVersion(Version.V1_1, "'const'", statement.start(), statement.end());
+        }
         statement.initializer().ifPresent(initializer -> initializer.accept(this));
         return null;
     }
@@ -75,6 +81,14 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
     @Override
     public Void visitAssignment(AssignmentStatement statement) {
         statement.value().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitIf(IfStatement statement) {
+        requireVersion(Version.V1_1, "'if'/'else'", statement.start(), statement.end());
+        statement.thenBranch().forEach(s -> s.accept(this));
+        statement.elseBranch().ifPresent(branch -> branch.forEach(s -> s.accept(this)));
         return null;
     }
 
@@ -109,6 +123,20 @@ final class VersionValidator implements StatementVisitor<Void>, ExpressionVisito
     public Void visitBinary(BinaryExpression expression) {
         expression.left().accept(this);
         expression.right().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitReadInput(ReadInputExpression expression) {
+        requireVersion(Version.V1_1, "'readInput'", expression.start(), expression.end());
+        expression.message().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visitReadEnv(ReadEnvExpression expression) {
+        requireVersion(Version.V1_1, "'readEnv'", expression.start(), expression.end());
+        expression.variableName().accept(this);
         return null;
     }
 

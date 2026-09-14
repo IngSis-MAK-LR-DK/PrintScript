@@ -20,7 +20,7 @@ public final class AnalyzerConfigLoader implements ConfigLoader<AnalyzerConfig> 
     public AnalyzerConfig load(Reader source, ConfigFormat format) {
         ObjectMapper mapper = format == ConfigFormat.YAML ? yamlMapper : jsonMapper;
         try {
-            return mapper.readValue(source, AnalyzerConfig.class);
+            return mapper.readValue(source, RawAnalyzerConfig.class).resolve();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

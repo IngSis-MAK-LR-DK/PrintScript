@@ -88,6 +88,40 @@ class PrintScriptLexerTest {
     }
 
     @Test
+    void recognizesConstKeyword() {
+        List<Token> tokens = tokenize("const x: number = 1;");
+
+        assertEquals(TokenType.CONST, tokens.get(0).type());
+    }
+
+    @Test
+    void aNameStartingWithConstIsStillAnIdentifier() {
+        List<Token> tokens = tokenize("constant");
+
+        assertEquals(TokenType.IDENTIFIER, tokens.get(0).type());
+        assertEquals("constant", tokens.get(0).lexeme());
+    }
+
+    @Test
+    void recognizesReadInputAndReadEnvKeywords() {
+        List<Token> tokens = tokenize("readInput(\"prompt\") readEnv(\"NAME\")");
+
+        List<TokenType> types = tokens.stream().map(Token::type).toList();
+        assertEquals(
+                List.of(
+                        TokenType.READ_INPUT,
+                        TokenType.LEFT_PAREN,
+                        TokenType.STRING_LITERAL,
+                        TokenType.RIGHT_PAREN,
+                        TokenType.READ_ENV,
+                        TokenType.LEFT_PAREN,
+                        TokenType.STRING_LITERAL,
+                        TokenType.RIGHT_PAREN,
+                        TokenType.EOF),
+                types);
+    }
+
+    @Test
     void recognizesPrintlnKeywordAndParens() {
         List<Token> tokens = tokenize("println(a);");
 

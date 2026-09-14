@@ -65,7 +65,12 @@ public final class Main {
 
         return switch (arguments.operation()) {
             case VALIDATION -> new ValidationCommand(pipeline, new PrintScriptSemanticAnalyzer());
-            case EXECUTION -> new ExecutionCommand(pipeline, new PrintScriptInterpreter());
+            case EXECUTION ->
+                    new ExecutionCommand(
+                            pipeline,
+                            new PrintScriptInterpreter(),
+                            new StdInInputProvider(),
+                            new SystemEnvironmentReader());
             case FORMATTING ->
                     new FormattingCommand(
                             pipeline, new PrintScriptFormatter(), new FormatterConfigLoader());

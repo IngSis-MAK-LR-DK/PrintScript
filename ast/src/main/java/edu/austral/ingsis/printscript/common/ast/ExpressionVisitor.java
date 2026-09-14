@@ -12,4 +12,8 @@ public interface ExpressionVisitor<R> {
     R visitIdentifier(IdentifierExpression expression);
 
     R visitBinary(BinaryExpression expression);
+
+    R visitReadInput(ReadInputExpression expression);
+
+    R visitReadEnv(ReadEnvExpression expression);
 }

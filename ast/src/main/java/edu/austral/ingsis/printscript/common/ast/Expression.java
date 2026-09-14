@@ -6,7 +6,9 @@ public sealed interface Expression extends ASTNode
                 StringLiteralExpression,
                 BooleanLiteralExpression,
                 IdentifierExpression,
-                BinaryExpression {
+                BinaryExpression,
+                ReadInputExpression,
+                ReadEnvExpression {
 
     <R> R accept(ExpressionVisitor<R> visitor);
 }

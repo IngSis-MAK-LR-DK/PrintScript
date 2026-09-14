@@ -3,7 +3,12 @@ package edu.austral.ingsis.printscript.common;
 public enum TokenType {
     // Keywords
     LET,
+    CONST,
     PRINTLN,
+    IF,
+    ELSE,
+    READ_INPUT,
+    READ_ENV,
 
     // Literals and identifiers
     IDENTIFIER,
@@ -17,6 +22,8 @@ public enum TokenType {
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
 
     // Any binary operator — core (+, -, *, /) or plugin-contributed. Which one it is gets
     // resolved by looking up the token's lexeme in the operator table (see OperatorDefinition).

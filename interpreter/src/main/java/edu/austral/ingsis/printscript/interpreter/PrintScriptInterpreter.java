@@ -7,10 +7,10 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
 public final class PrintScriptInterpreter implements Interpreter {
 
     @Override
-    public void interpret(Iterator<Statement> statements, Emitter emitter) {
+    public void interpret(Iterator<Statement> statements, ExecutionContext context) {
         Environment environment = new Environment();
         while (statements.hasNext()) {
-            StatementExecutor executor = new StatementExecutor(environment, emitter);
+            StatementExecutor executor = new StatementExecutor(environment, context);
             environment = statements.next().accept(executor);
         }
     }

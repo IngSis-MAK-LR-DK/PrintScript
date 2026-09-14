@@ -1,12 +1,15 @@
 package edu.austral.ingsis.printscript.parser;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
+import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
@@ -16,8 +19,11 @@ import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
@@ -29,12 +35,14 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
  * PrintScriptParser#parse}), so this grammar never has to know which version is active:
  *
  * <pre>
- * statement   := declaration | assignment | println
- * declaration := "let" IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
+ * statement   := declaration | assignment | println | ifStatement
+ * declaration := ("let" | "const") IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
  * assignment  := IDENTIFIER "=" expression ";"
  * println     := "println" "(" expression ")" ";"
+ * ifStatement := "if" "(" IDENTIFIER ")" "{" statement* "}" ("else" "{" statement* "}")?
  * expression  := primary (OPERATOR primary)*
  * primary     := NUMBER | STRING | BOOLEAN | IDENTIFIER | "(" expression ")"
+ *              | "readInput" "(" expression ")" | "readEnv" "(" expression ")"
  * </pre>
  *
  * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
@@ -56,7 +64,9 @@ final class StatementIterator implements Iterator<Statement> {
     private final Map<TokenType, Function<TokenStream, ParseResult<Statement>>> statementParsers =
             Map.of(
                     TokenType.LET, this::parseVariableDeclaration,
+                    TokenType.CONST, this::parseVariableDeclaration,
                     TokenType.PRINTLN, this::parsePrintln,
+                    TokenType.IF, this::parseIfStatement,
                     TokenType.IDENTIFIER, this::parseAssignment);
 
     StatementIterator(
@@ -96,9 +106,11 @@ final class StatementIterator implements Iterator<Statement> {
     }
 
     private ParseResult<Statement> parseVariableDeclaration(TokenStream tokens) {
-        ParseResult<Token> let = expect(tokens, TokenType.LET, "Expected 'let'");
+        Token keyword = peek(tokens); // LET or CONST, guaranteed by the statementParsers dispatch
+        boolean isConstant = keyword.type() == TokenType.CONST;
+        ParseResult<Token> keywordResult = advance(tokens);
         ParseResult<Token> name =
-                expect(let.rest(), TokenType.IDENTIFIER, "Expected a variable name");
+                expect(keywordResult.rest(), TokenType.IDENTIFIER, "Expected a variable name");
         ParseResult<Token> colon =
                 expect(name.rest(), TokenType.COLON, "Expected ':' after variable name");
         ParseResult<Token> type =
@@ -119,8 +131,9 @@ final class StatementIterator implements Iterator<Statement> {
                 new VariableDeclarationStatement(
                         name.node().lexeme(),
                         type.node().lexeme(),
+                        isConstant,
                         initializer,
-                        let.node().start(),
+                        keyword.start(),
                         semicolon.node().end());
         return new ParseResult<>(declaration, semicolon.rest());
     }
@@ -157,6 +170,69 @@ final class StatementIterator implements Iterator<Statement> {
                 new PrintlnStatement(
                         argument.node(), println.node().start(), semicolon.node().end());
         return new ParseResult<>(statement, semicolon.rest());
+    }
+
+    private ParseResult<Statement> parseIfStatement(TokenStream tokens) {
+        ParseResult<Token> ifToken = expect(tokens, TokenType.IF, "Expected 'if'");
+        ParseResult<Token> leftParen =
+                expect(ifToken.rest(), TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+        ParseResult<Token> conditionToken =
+                expect(
+                        leftParen.rest(),
+                        TokenType.IDENTIFIER,
+                        "Expected a boolean variable as the 'if' condition");
+        IdentifierExpression condition =
+                new IdentifierExpression(
+                        conditionToken.node().lexeme(),
+                        conditionToken.node().start(),
+                        conditionToken.node().end());
+        ParseResult<Token> rightParen =
+                expect(
+                        conditionToken.rest(),
+                        TokenType.RIGHT_PAREN,
+                        "Expected ')' after 'if' condition");
+        ParseResult<Token> thenLeftBrace =
+                expect(rightParen.rest(), TokenType.LEFT_BRACE, "Expected '{' after 'if (...)'");
+        ParseResult<List<Statement>> thenBranch = parseBlockBody(thenLeftBrace.rest());
+        ParseResult<Token> thenRightBrace =
+                expect(
+                        thenBranch.rest(),
+                        TokenType.RIGHT_BRACE,
+                        "Expected '}' to close 'if' block");
+
+        Optional<List<Statement>> elseBranch = Optional.empty();
+        TokenStream rest = thenRightBrace.rest();
+        Position end = thenRightBrace.node().end();
+        if (check(rest, TokenType.ELSE)) {
+            ParseResult<Token> elseToken = advance(rest);
+            ParseResult<Token> elseLeftBrace =
+                    expect(elseToken.rest(), TokenType.LEFT_BRACE, "Expected '{' after 'else'");
+            ParseResult<List<Statement>> body = parseBlockBody(elseLeftBrace.rest());
+            ParseResult<Token> elseRightBrace =
+                    expect(
+                            body.rest(),
+                            TokenType.RIGHT_BRACE,
+                            "Expected '}' to close 'else' block");
+            elseBranch = Optional.of(body.node());
+            rest = elseRightBrace.rest();
+            end = elseRightBrace.node().end();
+        }
+
+        Statement statement =
+                new IfStatement(
+                        condition, thenBranch.node(), elseBranch, ifToken.node().start(), end);
+        return new ParseResult<>(statement, rest);
+    }
+
+    private ParseResult<List<Statement>> parseBlockBody(TokenStream tokens) {
+        List<Statement> statements = new ArrayList<>();
+        TokenStream rest = tokens;
+        while (!check(rest, TokenType.RIGHT_BRACE) && !check(rest, TokenType.EOF)) {
+            ParseResult<Statement> result = parseStatement(rest);
+            statements.add(result.node());
+            rest = result.rest();
+        }
+        return new ParseResult<>(statements, rest);
     }
 
     private ParseResult<Expression> parseExpression(TokenStream tokens) {
@@ -232,6 +308,42 @@ final class StatementIterator implements Iterator<Statement> {
                                 TokenType.RIGHT_PAREN,
                                 "Expected ')' to close expression");
                 return new ParseResult<>(inner.node(), rightParen.rest());
+            }
+            case READ_INPUT -> {
+                ParseResult<Token> consumed = advance(tokens);
+                ParseResult<Token> leftParen =
+                        expect(
+                                consumed.rest(),
+                                TokenType.LEFT_PAREN,
+                                "Expected '(' after 'readInput'");
+                ParseResult<Expression> message = parseExpression(leftParen.rest());
+                ParseResult<Token> rightParen =
+                        expect(
+                                message.rest(),
+                                TokenType.RIGHT_PAREN,
+                                "Expected ')' after 'readInput' argument");
+                Expression expression =
+                        new ReadInputExpression(
+                                message.node(), token.start(), rightParen.node().end());
+                return new ParseResult<>(expression, rightParen.rest());
+            }
+            case READ_ENV -> {
+                ParseResult<Token> consumed = advance(tokens);
+                ParseResult<Token> leftParen =
+                        expect(
+                                consumed.rest(),
+                                TokenType.LEFT_PAREN,
+                                "Expected '(' after 'readEnv'");
+                ParseResult<Expression> variableName = parseExpression(leftParen.rest());
+                ParseResult<Token> rightParen =
+                        expect(
+                                variableName.rest(),
+                                TokenType.RIGHT_PAREN,
+                                "Expected ')' after 'readEnv' argument");
+                Expression expression =
+                        new ReadEnvExpression(
+                                variableName.node(), token.start(), rightParen.node().end());
+                return new ParseResult<>(expression, rightParen.rest());
             }
             default ->
                     throw new SyntaxException(

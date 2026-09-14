@@ -5,6 +5,8 @@ import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
+import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
 /** Renders an expression to text. Operators always get one space on each side — that's fixed. */
@@ -45,5 +47,15 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
                 + expression.operator().symbol()
                 + " "
                 + expression.right().accept(this);
+    }
+
+    @Override
+    public String visitReadInput(ReadInputExpression expression) {
+        return "readInput(" + expression.message().accept(this) + ")";
+    }
+
+    @Override
+    public String visitReadEnv(ReadEnvExpression expression) {
+        return "readEnv(" + expression.variableName().accept(this) + ")";
     }
 }

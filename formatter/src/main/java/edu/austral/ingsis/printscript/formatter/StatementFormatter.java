@@ -1,7 +1,11 @@
 package edu.austral.ingsis.printscript.formatter;
 
+import java.util.List;
+
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
+import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
+import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StatementVisitor;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
@@ -16,7 +20,9 @@ final class StatementFormatter implements StatementVisitor<String> {
 
     @Override
     public String visitVariableDeclaration(VariableDeclarationStatement statement) {
-        StringBuilder text = new StringBuilder("let ").append(statement.identifierName());
+        StringBuilder text =
+                new StringBuilder(statement.isConstant() ? "const " : "let ")
+                        .append(statement.identifierName());
         if (config.spaceBeforeColon()) {
             text.append(' ');
         }
@@ -43,6 +49,42 @@ final class StatementFormatter implements StatementVisitor<String> {
     @Override
     public String visitPrintln(PrintlnStatement statement) {
         return "println(" + statement.argument().accept(expressionFormatter) + ");";
+    }
+
+    @Override
+    public String visitIf(IfStatement statement) {
+        StringBuilder text =
+                new StringBuilder("if (").append(statement.condition().name()).append(") {\n");
+        appendIndentedBlock(text, statement.thenBranch());
+        text.append('}');
+        statement
+                .elseBranch()
+                .ifPresent(
+                        elseBranch -> {
+                            text.append(" else {\n");
+                            appendIndentedBlock(text, elseBranch);
+                            text.append('}');
+                        });
+        return text.toString();
+    }
+
+    /**
+     * Renders each statement of {@code block} through this same visitor, then re-indents every line
+     * of the result by one level. Composes correctly for nested {@code if}-in-{@code if}: an inner
+     * if's own lines are already indented relative to itself, and this adds one more uniform level
+     * on top of all of them.
+     */
+    private void appendIndentedBlock(StringBuilder text, List<Statement> block) {
+        String indent = " ".repeat(config.indentSize());
+        for (Statement statement : block) {
+            String rendered = statement.accept(this);
+            for (String line : rendered.split("\n", -1)) {
+                if (!line.isEmpty()) {
+                    text.append(indent).append(line);
+                }
+                text.append('\n');
+            }
+        }
     }
 
     private void appendAssignedValue(StringBuilder text, String formattedValue) {
