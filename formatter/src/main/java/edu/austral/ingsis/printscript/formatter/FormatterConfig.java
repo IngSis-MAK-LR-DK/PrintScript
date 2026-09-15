@@ -14,6 +14,8 @@ package edu.austral.ingsis.printscript.formatter;
  *     relative to the line that opens it
  * @param spaceAroundParens space right inside the parentheses of a {@code println} call, e.g.
  *     {@code println( x )} instead of {@code println(x)}
+ * @param ifBraceBelowLine whether the opening {@code {} of an {@code if}/{@code else} block goes
+ *     on its own line below the {@code if (...)}/{@code else} line, instead of on the same line
  */
 public record FormatterConfig(
         boolean spaceBeforeColon,
@@ -21,7 +23,8 @@ public record FormatterConfig(
         boolean spaceAroundEquals,
         int newLinesBeforePrintln,
         int indentSize,
-        boolean spaceAroundParens) {
+        boolean spaceAroundParens,
+        boolean ifBraceBelowLine) {
 
     public FormatterConfig {
         if (newLinesBeforePrintln < 0 || newLinesBeforePrintln > 2) {
@@ -30,6 +33,27 @@ public record FormatterConfig(
         if (indentSize < 0) {
             throw new IllegalArgumentException("indentSize must not be negative");
         }
+    }
+
+    /**
+     * Compatibility constructor for call sites that predate {@code ifBraceBelowLine}: defaults to
+     * the brace staying on the same line as {@code if (...)}/{@code else}.
+     */
+    public FormatterConfig(
+            boolean spaceBeforeColon,
+            boolean spaceAfterColon,
+            boolean spaceAroundEquals,
+            int newLinesBeforePrintln,
+            int indentSize,
+            boolean spaceAroundParens) {
+        this(
+                spaceBeforeColon,
+                spaceAfterColon,
+                spaceAroundEquals,
+                newLinesBeforePrintln,
+                indentSize,
+                spaceAroundParens,
+                false);
     }
 
     /**
@@ -64,6 +88,6 @@ public record FormatterConfig(
     }
 
     public static FormatterConfig defaultConfig() {
-        return new FormatterConfig(false, true, true, 0, 2, false);
+        return new FormatterConfig(false, true, true, 0, 2, false, false);
     }
 }

@@ -13,7 +13,8 @@ record RawFormatterConfig(
         Boolean spaceAroundEquals,
         Integer newLinesBeforePrintln,
         Integer indentSize,
-        Boolean spaceAroundParens) {
+        Boolean spaceAroundParens,
+        Boolean ifBraceBelowLine) {
 
     FormatterConfig resolve() {
         FormatterConfig defaults = FormatterConfig.defaultConfig();
@@ -25,6 +26,7 @@ record RawFormatterConfig(
                         ? newLinesBeforePrintln
                         : defaults.newLinesBeforePrintln(),
                 indentSize != null ? indentSize : defaults.indentSize(),
-                spaceAroundParens != null ? spaceAroundParens : defaults.spaceAroundParens());
+                spaceAroundParens != null ? spaceAroundParens : defaults.spaceAroundParens(),
+                ifBraceBelowLine != null ? ifBraceBelowLine : defaults.ifBraceBelowLine());
     }
 }

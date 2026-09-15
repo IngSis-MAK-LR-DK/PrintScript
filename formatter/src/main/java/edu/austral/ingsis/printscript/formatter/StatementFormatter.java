@@ -56,15 +56,19 @@ final class StatementFormatter implements StatementVisitor<String> {
 
     @Override
     public String visitIf(IfStatement statement) {
+        String braceOpener = config.ifBraceBelowLine() ? "\n{\n" : " {\n";
         StringBuilder text =
-                new StringBuilder("if (").append(statement.condition().name()).append(") {\n");
+                new StringBuilder("if (")
+                        .append(statement.condition().name())
+                        .append(')')
+                        .append(braceOpener);
         appendIndentedBlock(text, statement.thenBranch());
         text.append('}');
         statement
                 .elseBranch()
                 .ifPresent(
                         elseBranch -> {
-                            text.append(" else {\n");
+                            text.append(config.ifBraceBelowLine() ? "\nelse" : " else").append(braceOpener);
                             appendIndentedBlock(text, elseBranch);
                             text.append('}');
                         });
