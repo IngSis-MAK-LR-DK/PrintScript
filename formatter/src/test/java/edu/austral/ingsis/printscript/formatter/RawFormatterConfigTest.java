@@ -13,7 +13,7 @@ class RawFormatterConfigTest {
 
     @Test
     void everyFieldAbsentResolvesToTheDomainDefault() {
-        RawFormatterConfig raw = new RawFormatterConfig(null, null, null, null, null);
+        RawFormatterConfig raw = new RawFormatterConfig(null, null, null, null, null, null);
 
         assertEquals(FormatterConfig.defaultConfig(), raw.resolve());
     }
@@ -22,7 +22,7 @@ class RawFormatterConfigTest {
     void anExplicitZeroIsRespectedAndNotOverwrittenByTheDefault() {
         // This is exactly what a primitive int can't tell apart from "absent" - the whole point
         // of boxing every field in RawFormatterConfig.
-        RawFormatterConfig raw = new RawFormatterConfig(false, false, false, 0, 0);
+        RawFormatterConfig raw = new RawFormatterConfig(false, false, false, 0, 0, false);
 
         FormatterConfig resolved = raw.resolve();
 
@@ -32,7 +32,7 @@ class RawFormatterConfigTest {
 
     @Test
     void aMixOfPresentAndAbsentFieldsResolvesEachIndependently() {
-        RawFormatterConfig raw = new RawFormatterConfig(true, null, null, 1, null);
+        RawFormatterConfig raw = new RawFormatterConfig(true, null, null, 1, null, null);
 
         FormatterConfig resolved = raw.resolve();
 
@@ -42,5 +42,7 @@ class RawFormatterConfigTest {
                 FormatterConfig.defaultConfig().spaceAroundEquals(), resolved.spaceAroundEquals());
         assertEquals(1, resolved.newLinesBeforePrintln());
         assertEquals(FormatterConfig.defaultConfig().indentSize(), resolved.indentSize());
+        assertEquals(
+                FormatterConfig.defaultConfig().spaceAroundParens(), resolved.spaceAroundParens());
     }
 }

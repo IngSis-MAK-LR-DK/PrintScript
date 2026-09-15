@@ -48,7 +48,10 @@ final class StatementFormatter implements StatementVisitor<String> {
 
     @Override
     public String visitPrintln(PrintlnStatement statement) {
-        return "println(" + statement.argument().accept(expressionFormatter) + ");";
+        String argument = statement.argument().accept(expressionFormatter);
+        return config.spaceAroundParens()
+                ? "println ( " + argument + " );"
+                : "println(" + argument + ");";
     }
 
     @Override

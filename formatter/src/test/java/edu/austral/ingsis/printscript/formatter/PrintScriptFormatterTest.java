@@ -128,14 +128,37 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    void insertsBlankLinesBeforePrintlnAsConfigured() {
+    void insertsBlankLinesBetweenConsecutivePrintlnsAsConfigured() {
+        // println(x);
+        //
+        //
+        // println(y);
+        FormatterConfig config = new FormatterConfig(false, true, true, 2);
+
+        String result = format(config, println(id("x")), println(id("y")));
+
+        assertEquals("println(x);\n\n\nprintln(y);\n", result);
+    }
+
+    @Test
+    void doesNotInsertBlankLinesBeforeAPrintlnThatFollowsANonPrintlnStatement() {
         // let x: number = 1;
         // println(x);
         FormatterConfig config = new FormatterConfig(false, true, true, 2);
 
         String result = format(config, let("x", "number", num(1)), println(id("x")));
 
-        assertEquals("let x: number = 1;\n\n\nprintln(x);\n", result);
+        assertEquals("let x: number = 1;\nprintln(x);\n", result);
+    }
+
+    @Test
+    void addsSpaceAroundParensWhenConfigured() {
+        // println ( x );
+        FormatterConfig config = new FormatterConfig(false, true, true, 0, 2, true);
+
+        String result = format(config, println(id("x")));
+
+        assertEquals("println ( x );\n", result);
     }
 
     @Test

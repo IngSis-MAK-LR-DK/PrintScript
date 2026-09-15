@@ -6,17 +6,22 @@ package edu.austral.ingsis.printscript.formatter;
  * @param spaceBeforeColon space before the {@code :} in a declaration
  * @param spaceAfterColon space after the {@code :} in a declaration
  * @param spaceAroundEquals space before and after the {@code =} in a declaration or assignment
- * @param newLinesBeforePrintln extra line breaks (0, 1 or 2) inserted right before a {@code
- *     println} call
+ * @param newLinesBeforePrintln extra line breaks (0, 1 or 2) inserted between two
+ *     <em>consecutive</em> {@code println} calls at the top level of the program - a {@code
+ *     println} that follows a non-{@code println} statement, or the first statement of the file,
+ *     never gets one
  * @param indentSize how many spaces to indent the content of an {@code if}/{@code else} block
  *     relative to the line that opens it
+ * @param spaceAroundParens space right inside the parentheses of a {@code println} call, e.g.
+ *     {@code println( x )} instead of {@code println(x)}
  */
 public record FormatterConfig(
         boolean spaceBeforeColon,
         boolean spaceAfterColon,
         boolean spaceAroundEquals,
         int newLinesBeforePrintln,
-        int indentSize) {
+        int indentSize,
+        boolean spaceAroundParens) {
 
     public FormatterConfig {
         if (newLinesBeforePrintln < 0 || newLinesBeforePrintln > 2) {
@@ -25,6 +30,25 @@ public record FormatterConfig(
         if (indentSize < 0) {
             throw new IllegalArgumentException("indentSize must not be negative");
         }
+    }
+
+    /**
+     * Compatibility constructor for call sites that predate {@code spaceAroundParens}: defaults to
+     * no extra spacing inside {@code println}'s parentheses.
+     */
+    public FormatterConfig(
+            boolean spaceBeforeColon,
+            boolean spaceAfterColon,
+            boolean spaceAroundEquals,
+            int newLinesBeforePrintln,
+            int indentSize) {
+        this(
+                spaceBeforeColon,
+                spaceAfterColon,
+                spaceAroundEquals,
+                newLinesBeforePrintln,
+                indentSize,
+                false);
     }
 
     /**
@@ -40,6 +64,6 @@ public record FormatterConfig(
     }
 
     public static FormatterConfig defaultConfig() {
-        return new FormatterConfig(false, true, true, 0, 2);
+        return new FormatterConfig(false, true, true, 0, 2, false);
     }
 }
