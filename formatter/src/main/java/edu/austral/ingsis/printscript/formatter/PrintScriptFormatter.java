@@ -15,9 +15,6 @@ public final class PrintScriptFormatter implements Formatter {
 
         while (statements.hasNext()) {
             Statement statement = statements.next();
-            // Only between two println calls back to back - not before the first println in the
-            // file, and not when it follows some other kind of statement (see FormatterConfig's
-            // newLinesBeforePrintln javadoc).
             if (previous instanceof PrintlnStatement && statement instanceof PrintlnStatement) {
                 output.append("\n".repeat(config.newLinesBeforePrintln()));
             }

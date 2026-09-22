@@ -14,10 +14,7 @@ public record VariableDeclarationStatement(
         Position end)
         implements Statement {
 
-    /**
-     * Compatibility constructor for call sites that predate {@code const}: defaults to a
-     * non-constant ({@code let}) declaration.
-     */
+    /** Default constructor to a non-constant declaration. */
     public VariableDeclarationStatement(
             String identifierName,
             String typeName,

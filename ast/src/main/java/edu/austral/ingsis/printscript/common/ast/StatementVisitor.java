@@ -1,6 +1,6 @@
 package edu.austral.ingsis.printscript.common.ast;
 
-/** Double-dispatch contract implemented by the interpreter, formatter and analyzer. */
+/** Double-dispatch contract implemented by the interpreter, formatter. */
 public interface StatementVisitor<R> {
 
     R visitVariableDeclaration(VariableDeclarationStatement statement);

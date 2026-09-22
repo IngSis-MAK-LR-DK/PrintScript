@@ -22,10 +22,7 @@ public record AnalyzerConfig(
 
     /**
      * Compatibility constructor for callers built before {@link
-     * #readArgumentMustBeIdentifierOrLiteral} existed. Note this default only applies to hand-built
-     * instances - Jackson deserializes YAML/JSON straight through the canonical (4-arg)
-     * constructor, so a config file that omits this field gets Java's raw {@code false} default
-     * instead, the same gotcha already documented on {@code FormatterConfig}.
+     * #readArgumentMustBeIdentifierOrLiteral} existed.
      */
     public AnalyzerConfig(
             boolean identifierCaseCheckEnabled,

@@ -29,32 +29,17 @@ import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 
 /**
- * Recursive-descent parser for the PrintScript grammar — the superset across every version. This
- * class never rejects a construct for being from a later version than the one running; that's
- * {@link VersionValidator}'s job, applied once to the finished AST (see {@link
- * PrintScriptParser#parse}), so this grammar never has to know which version is active:
+ * Recursive-descent parser for the PrintScript grammar.
  *
- * <pre>
- * statement   := declaration | assignment | println | ifStatement
- * declaration := ("let" | "const") IDENTIFIER ":" IDENTIFIER ("=" expression)? ";"
- * assignment  := IDENTIFIER "=" expression ";"
- * println     := "println" "(" expression ")" ";"
- * ifStatement := "if" "(" IDENTIFIER ")" "{" statement* "}" ("else" "{" statement* "}")?
- * expression  := primary (OPERATOR primary)*
- * primary     := NUMBER | STRING | BOOLEAN | IDENTIFIER | "(" expression ")"
- *              | "readInput" "(" expression ")" | "readEnv" "(" expression ")"
- * </pre>
+ * <p>It never rejects anything for being from a later version; that's {@link VersionValidator}'s
+ * job, applied once to the finished AST, so this grammar never has to know which version is active:
  *
- * {@code expression} isn't split into separate grammar levels for each precedence — an operator's
- * binding level comes from {@code precedenceLevels} (resolved once, up front, from every installed
- * operator's relative {@code OperatorPrecedence} constraints — see {@code
- * OperatorPrecedenceResolver}) and is applied dynamically in {@link #parseExpression(TokenStream,
- * int)}, so a new operator changes only that table, never this grammar.
- *
- * <p>Every {@code parseX} method here is pure: it takes the {@link TokenStream} to read from and
- * returns a {@link ParseResult} with what it built and the stream that's left over — nothing is
- * mutated along the way. {@link #tokens} is the only mutable state in this class, and it only
- * changes once per call to {@link #next()}, to remember where the previous statement left off.
+ * <p>statement := declaration | assignment | println | ifStatement declaration := ("let" | "const")
+ * IDENTIFIER ":" IDENTIFIER ("=" expression)? ";" assignment := IDENTIFIER "=" expression ";"
+ * println := "println" "(" expression ")" ";" ifStatement := "if" "(" IDENTIFIER ")" "{" statement*
+ * "}" ("else" "{" statement* "}")? expression := primary (OPERATOR primary)* primary := NUMBER |
+ * STRING | BOOLEAN | IDENTIFIER | "(" expression ")" | "readInput" "(" expression ")" | "readEnv"
+ * "(" expression ")"
  */
 final class StatementIterator implements Iterator<Statement> {
 

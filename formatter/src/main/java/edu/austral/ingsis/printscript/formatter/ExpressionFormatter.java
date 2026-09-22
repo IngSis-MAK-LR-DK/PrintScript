@@ -9,7 +9,7 @@ import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
 import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
-/** Renders an expression to text. Operators always get one space on each side — that's fixed. */
+/** Renders an expression to text. Operators always get one space on each side. */
 final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override

@@ -9,8 +9,7 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
  * Builds the PrintScript AST out of a token stream.
  *
  * <p>The returned iterator pulls tokens lazily and yields one {@link Statement} per call to {@code
- * next()}. A statement, terminated by {@code ;}, is the natural place to stop — neither the full
- * token list nor the full AST ever needs to sit in memory at once.
+ * next()}.
  */
 public interface Parser {
 

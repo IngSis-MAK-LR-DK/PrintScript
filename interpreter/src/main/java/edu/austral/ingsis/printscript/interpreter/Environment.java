@@ -63,11 +63,6 @@ final class Environment {
         return new Environment(declaredTypes, Map.copyOf(updatedValues), constants);
     }
 
-    /**
-     * Needed by {@code StatementExecutor} to know a variable's declared type before coercing a raw
-     * {@code readInput}/{@code readEnv} string on assignment (not just on declaration, where the
-     * type is already on hand from the statement itself).
-     */
     String typeOf(String name, Position at) {
         String type = declaredTypes.get(name);
         if (type == null) {

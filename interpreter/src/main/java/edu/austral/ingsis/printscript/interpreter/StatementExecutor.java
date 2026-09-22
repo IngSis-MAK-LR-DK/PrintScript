@@ -91,12 +91,7 @@ final class StatementExecutor implements StatementVisitor<Environment> {
 
     /**
      * Evaluates {@code expression} for use as the value of a declaration/assignment. {@code
-     * readInput}/{@code readEnv} always evaluate to a raw {@code String} (see their javadoc); if
-     * {@code expression} is <em>directly</em> one of those two node types, the raw string gets
-     * coerced here to {@code declaredType} - a deliberately shallow, AST-shape check. Nested usage
-     * inside a larger expression (e.g. {@code readInput(...) + 1}) is out of scope: it falls
-     * through to ordinary binary-expression semantics, surfacing as the existing generic
-     * type-mismatch error if the result doesn't happen to already match the declared type.
+     * readInput}/{@code readEnv} always evaluate to a raw {@code String}.
      */
     private Object evaluateForAssignment(Expression expression, String declaredType) {
         Object raw = expression.accept(evaluator);

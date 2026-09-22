@@ -2,9 +2,7 @@ package edu.austral.ingsis.printscript.interpreter;
 
 /**
  * Everything an {@link Interpreter} needs from its caller to run a program: where {@code println}
- * output goes, and how to answer {@code readInput}/{@code readEnv}. Bundled into one object instead
- * of three separate parameters - a future need doesn't grow {@link Interpreter#interpret}'s
- * signature again, it just adds a field here.
+ * output goes, and how to answer {@code readInput}/{@code readEnv}.
  */
 public record ExecutionContext(
         Emitter emitter, InputProvider inputProvider, EnvironmentReader environmentReader) {

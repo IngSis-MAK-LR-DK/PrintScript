@@ -10,8 +10,7 @@ import edu.austral.ingsis.printscript.common.ast.Expression;
  * else passes through unchanged as a {@link String}.
  *
  * <p>Split out of {@link StatementExecutor}: parsing untrusted external text into a typed value is
- * a different concern from executing a statement against an {@link Environment}, and this can grow
- * independently (more types, different parsing rules) without bloating the executor.
+ * a different concern from executing a statement against an {@link Environment}.
  */
 final class RuntimeValueCoercer {
 

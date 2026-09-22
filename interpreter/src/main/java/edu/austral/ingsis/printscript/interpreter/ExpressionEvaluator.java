@@ -54,13 +54,12 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
         Object left = expression.left().accept(this);
         Object right = expression.right().accept(this);
 
-        // '+' also concatenates strings — an overload the OperatorDefinition#apply(double, double)
-        // contract can't express (it's number-only), so it's handled here rather than inside
-        // CoreOperators.PLUS itself. Every other operator, core or plugin, is number-only.
+        // '+' also concatenates strings
         if (expression.operator() == CoreOperators.PLUS
                 && (left instanceof String || right instanceof String)) {
             return stringify(left) + stringify(right);
         }
+
         if (left instanceof Double leftNumber && right instanceof Double rightNumber) {
             return expression.operator().apply(leftNumber, rightNumber);
         }
@@ -72,10 +71,6 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
                 expression.end());
     }
 
-    /**
-     * Always a raw {@code String} - see {@link ReadInputExpression}'s javadoc for why coercion
-     * happens elsewhere, not here.
-     */
     @Override
     public Object visitReadInput(ReadInputExpression expression) {
         String prompt = stringify(expression.message().accept(this));

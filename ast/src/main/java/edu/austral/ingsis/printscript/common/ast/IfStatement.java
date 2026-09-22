@@ -8,15 +8,10 @@ import edu.austral.ingsis.printscript.common.Position;
 /**
  * {@code if (<condition>) { <thenBranch> } [else { <elseBranch> }]}.
  *
- * <p>{@code condition} is typed as {@link IdentifierExpression}, not {@link Expression}: the
- * grammar only ever accepts a bare variable name there (no arbitrary boolean expressions) - "solo
- * con variables boolean como argumento" - so this is enforced by construction, not by a separate
- * syntax check. Whether that variable is actually of type {@code boolean} is still a semantic
- * property checked at runtime (types aren't tracked in the AST).
- *
- * <p>{@code elseBranch} is {@code Optional.empty()} when the source has no {@code else} clause at
- * all - there's no "else if" (per the consigna), so a chain of conditions is just nested {@code
- * IfStatement}s inside an {@code elseBranch}.
+ * <p>obs: {@code condition} is typed as {@link IdentifierExpression}, not {@link Expression}: the
+ * grammar only accepts a boolean variable name there (no arbitrary boolean expressions) - "solo con
+ * variables boolean como argumento". Whether that variable is actually of type {@code boolean} is
+ * still a semantic property checked at runtime (types aren't tracked in the AST).
  */
 public record IfStatement(
         IdentifierExpression condition,
