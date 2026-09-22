@@ -5,8 +5,8 @@ import java.io.IOException;
 /**
  * One CLI operation: validate, execute, format or analyze.
  *
- * @return the exit code — 0 on success, nonzero if the tool ran fine but has something to report,
- *     like the analyzer finding rule violations.
+ * @return the exit code is — 0 on success, nonzero if the tool ran fine but has something to
+ *     report, like the analyzer finding rule violations.
  */
 interface Command {
 
