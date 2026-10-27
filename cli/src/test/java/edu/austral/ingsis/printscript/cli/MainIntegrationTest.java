@@ -87,6 +87,15 @@ class MainIntegrationTest {
     }
 
     @Test
+    void formattingKeepsParenthesesThatChangeTheResult() throws IOException {
+        Path source = writeSource("let x:number=(1+2)*3;");
+
+        Main.main(new String[] {"formatting", source.toString()});
+
+        assertTrue(output().contains("let x: number = (1 + 2) * 3;"));
+    }
+
+    @Test
     void analyzingReportsOkForCompliantCode() throws IOException {
         Path source = writeSource("let myVar: number = 1;\nprintln(myVar);");
 
