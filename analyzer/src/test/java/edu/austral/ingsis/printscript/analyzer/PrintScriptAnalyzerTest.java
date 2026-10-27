@@ -1,6 +1,7 @@
 package edu.austral.ingsis.printscript.analyzer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
@@ -20,6 +21,7 @@ import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
+import edu.austral.ingsis.printscript.config.ConfigException;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
 
 import org.junit.jupiter.api.Test;
@@ -197,6 +199,28 @@ class PrintScriptAnalyzerTest {
         AnalyzerConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
         assertEquals(true, config.readArgumentMustBeIdentifierOrLiteral());
+    }
+
+    @Test
+    void rejectsAnUnknownConfigOption() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("identifierCas: SNAKE_CASE"),
+                                        ConfigFormat.YAML));
+
+        assertEquals("Unknown option 'identifierCas'", e.getMessage());
+    }
+
+    @Test
+    void rejectsAnUnknownIdentifierCase() {
+        assertThrows(
+                ConfigException.class,
+                () ->
+                        configLoader.load(
+                                new StringReader("identifierCase: camel"), ConfigFormat.YAML));
     }
 
     @Test
