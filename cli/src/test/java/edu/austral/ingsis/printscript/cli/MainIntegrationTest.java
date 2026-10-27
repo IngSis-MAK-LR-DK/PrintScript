@@ -1,6 +1,7 @@
 package edu.austral.ingsis.printscript.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -224,6 +225,55 @@ class MainIntegrationTest {
 
         assertEquals(1, exitCode);
         assertTrue(errorOutput().contains("Could not read the source file"));
+    }
+
+    @Test
+    void reportsAnInvalidConfigValueAsAUsageErrorNamingTheConfigFile() throws IOException {
+        Path source = writeSource("println(1);");
+        Path config = tempDir.resolve("rules.yaml");
+        Files.writeString(config, "newLinesBeforePrintln: 5\n");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "formatting", source.toString(), "--config", config.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Invalid config file '" + config + "'"));
+        assertTrue(errorOutput().contains("newLinesBeforePrintln must be 0, 1 or 2"));
+        assertFalse(errorOutput().contains("Could not read the source file"));
+    }
+
+    @Test
+    void reportsAnUnknownConfigOptionAsAUsageError() throws IOException {
+        Path source = writeSource("let x: number = 1;");
+        Path config = tempDir.resolve("rules.json");
+        Files.writeString(config, "{ \"identifierCas\": \"SNAKE_CASE\" }");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "analyzing", source.toString(), "--config", config.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Unknown option 'identifierCas'"));
+    }
+
+    @Test
+    void reportsAMissingConfigFileAsAUsageError() throws IOException {
+        Path source = writeSource("println(1);");
+        Path missing = tempDir.resolve("missing.yaml");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "formatting", source.toString(), "--config", missing.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Config file not found: " + missing));
     }
 
     @Test

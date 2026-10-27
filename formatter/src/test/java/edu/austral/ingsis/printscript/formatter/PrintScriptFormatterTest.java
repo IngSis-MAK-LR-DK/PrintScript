@@ -1,6 +1,8 @@
 package edu.austral.ingsis.printscript.formatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.util.List;
@@ -23,6 +25,7 @@ import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
+import edu.austral.ingsis.printscript.config.ConfigException;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
 
 import org.junit.jupiter.api.Test;
@@ -302,6 +305,51 @@ class PrintScriptFormatterTest {
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
         assertEquals(2, config.indentSize());
+    }
+
+    @Test
+    void rejectsAnUnknownConfigOption() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("spaceBeforColon: true"),
+                                        ConfigFormat.YAML));
+
+        assertEquals("Unknown option 'spaceBeforColon'", e.getMessage());
+    }
+
+    @Test
+    void rejectsAValueOfTheWrongType() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("indentSize: abc"), ConfigFormat.YAML));
+
+        assertTrue(e.getMessage().contains("line 1"));
+    }
+
+    @Test
+    void rejectsMalformedJson() {
+        assertThrows(
+                ConfigException.class,
+                () -> configLoader.load(new StringReader("{ \"indentSize\": "), ConfigFormat.JSON));
+    }
+
+    @Test
+    void rejectsAnOutOfRangeValue() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("newLinesBeforePrintln: 5"),
+                                        ConfigFormat.YAML));
+
+        assertEquals("newLinesBeforePrintln must be 0, 1 or 2", e.getMessage());
     }
 
     @Test
