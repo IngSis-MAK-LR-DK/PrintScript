@@ -1,8 +1,11 @@
 package edu.austral.ingsis.printscript.formatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +27,7 @@ import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
+import edu.austral.ingsis.printscript.config.ConfigException;
 import edu.austral.ingsis.printscript.config.ConfigFormat;
 
 import org.junit.jupiter.api.Test;
@@ -150,6 +154,34 @@ class PrintScriptFormatterTest {
         String result = format(config, let("x", "number", num(1)), println(id("x")));
 
         assertEquals("let x: number = 1;\nprintln(x);\n", result);
+    }
+
+    @Test
+    void doesNotInsertBlankLinesBeforeAPrintlnThatIsTheFirstStatement() {
+        FormatterConfig config = new FormatterConfig(false, true, true, 2);
+
+        assertEquals("println(x);\n", format(config, println(id("x"))));
+    }
+
+    @Test
+    void handsOutEachStatementAsItIsFormatted() {
+        List<String> chunks = new ArrayList<>();
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        formatter.format(
+                List.of(let("x", "number", num(1)), assign("x", num(2))).iterator(),
+                config,
+                chunks::add);
+
+        assertEquals(List.of("let x: number = 1;\n", "x = 2;\n"), chunks);
+    }
+
+    @Test
+    void writesNumbersInANotationTheLanguageCanReadBack() {
+        FormatterConfig config = new FormatterConfig(false, true, true, 0);
+
+        assertEquals("println(0.00001);\n", format(config, println(num(0.00001))));
+        assertEquals("println(100000000000000000000);\n", format(config, println(num(1e20))));
     }
 
     @Test
@@ -303,6 +335,51 @@ class PrintScriptFormatterTest {
         FormatterConfig config = configLoader.load(new StringReader(yaml), ConfigFormat.YAML);
 
         assertEquals(2, config.indentSize());
+    }
+
+    @Test
+    void rejectsAnUnknownConfigOption() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("spaceBeforColon: true"),
+                                        ConfigFormat.YAML));
+
+        assertEquals("Unknown option 'spaceBeforColon'", e.getMessage());
+    }
+
+    @Test
+    void rejectsAValueOfTheWrongType() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("indentSize: abc"), ConfigFormat.YAML));
+
+        assertTrue(e.getMessage().contains("line 1"));
+    }
+
+    @Test
+    void rejectsMalformedJson() {
+        assertThrows(
+                ConfigException.class,
+                () -> configLoader.load(new StringReader("{ \"indentSize\": "), ConfigFormat.JSON));
+    }
+
+    @Test
+    void rejectsAnOutOfRangeValue() {
+        ConfigException e =
+                assertThrows(
+                        ConfigException.class,
+                        () ->
+                                configLoader.load(
+                                        new StringReader("newLinesBeforePrintln: 5"),
+                                        ConfigFormat.YAML));
+
+        assertEquals("newLinesBeforePrintln must be 0, 1 or 2", e.getMessage());
     }
 
     @Test

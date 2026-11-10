@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.Position;
+import edu.austral.ingsis.printscript.common.SourceRange;
 import edu.austral.ingsis.printscript.common.SyntaxException;
 import edu.austral.ingsis.printscript.common.Token;
 import edu.austral.ingsis.printscript.common.TokenStream;
@@ -118,6 +119,8 @@ final class StatementIterator implements Iterator<Statement> {
                         type.node().lexeme(),
                         isConstant,
                         initializer,
+                        new SourceRange(name.node().start(), name.node().end()),
+                        new SourceRange(type.node().start(), type.node().end()),
                         keyword.start(),
                         semicolon.node().end());
         return new ParseResult<>(declaration, semicolon.rest());
@@ -134,6 +137,7 @@ final class StatementIterator implements Iterator<Statement> {
                 new AssignmentStatement(
                         name.node().lexeme(),
                         value.node(),
+                        new SourceRange(name.node().start(), name.node().end()),
                         name.node().start(),
                         semicolon.node().end());
         return new ParseResult<>(assignment, semicolon.rest());

@@ -2,6 +2,7 @@ package edu.austral.ingsis.printscript.formatter;
 
 import java.util.Map;
 
+import edu.austral.ingsis.printscript.common.NumberText;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
@@ -30,11 +31,7 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override
     public String visitNumberLiteral(NumberLiteralExpression expression) {
-        double value = expression.value();
-        if (value == Math.floor(value) && !Double.isInfinite(value)) {
-            return String.valueOf((long) value);
-        }
-        return String.valueOf(value);
+        return NumberText.of(expression.value());
     }
 
     @Override

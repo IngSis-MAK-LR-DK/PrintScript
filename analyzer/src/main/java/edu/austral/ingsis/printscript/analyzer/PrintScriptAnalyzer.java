@@ -1,8 +1,8 @@
 package edu.austral.ingsis.printscript.analyzer;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.Statement;
@@ -10,13 +10,14 @@ import edu.austral.ingsis.printscript.common.ast.Statement;
 public final class PrintScriptAnalyzer implements Analyzer {
 
     @Override
-    public List<AnalysisFinding> analyze(Iterator<Statement> statements, AnalyzerConfig config) {
+    public void analyze(
+            Iterator<Statement> statements,
+            AnalyzerConfig config,
+            Consumer<AnalysisFinding> reporter) {
         List<AnalysisRule> rules = config.toRules();
-        List<AnalysisFinding> findings = new ArrayList<>();
         while (statements.hasNext()) {
-            analyzeStatement(statements.next(), rules, findings);
+            analyzeStatement(statements.next(), rules, reporter);
         }
-        return findings;
     }
 
     /**
@@ -24,18 +25,18 @@ public final class PrintScriptAnalyzer implements Analyzer {
      * branches too, so a violation inside a block gets reported just like one at the top level.
      */
     private static void analyzeStatement(
-            Statement statement, List<AnalysisRule> rules, List<AnalysisFinding> findings) {
+            Statement statement, List<AnalysisRule> rules, Consumer<AnalysisFinding> reporter) {
         for (AnalysisRule rule : rules) {
-            rule.check(statement).ifPresent(findings::add);
+            rule.check(statement).ifPresent(reporter);
         }
         if (statement instanceof IfStatement ifStatement) {
-            ifStatement.thenBranch().forEach(inner -> analyzeStatement(inner, rules, findings));
+            ifStatement.thenBranch().forEach(inner -> analyzeStatement(inner, rules, reporter));
             ifStatement
                     .elseBranch()
                     .ifPresent(
                             branch ->
                                     branch.forEach(
-                                            inner -> analyzeStatement(inner, rules, findings)));
+                                            inner -> analyzeStatement(inner, rules, reporter)));
         }
     }
 }

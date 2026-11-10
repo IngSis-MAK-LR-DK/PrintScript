@@ -35,7 +35,7 @@ final class IdentifierCaseRule implements AnalysisRule {
                                 + "' does not follow "
                                 + requiredCase
                                 + " naming convention",
-                        declaration.start(),
-                        declaration.end()));
+                        declaration.identifierRange().start(),
+                        declaration.identifierRange().end()));
     }
 }
