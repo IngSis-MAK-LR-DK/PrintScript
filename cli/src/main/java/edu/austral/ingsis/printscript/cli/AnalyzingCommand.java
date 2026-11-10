@@ -1,10 +1,6 @@
 package edu.austral.ingsis.printscript.cli;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,7 +28,7 @@ final class AnalyzingCommand implements Command {
         Iterator<Statement> statements = pipeline.parse(arguments.sourceFile());
         AnalyzerConfig config =
                 arguments.configFile().isPresent()
-                        ? loadConfig(arguments.configFile().get())
+                        ? ConfigFiles.load(arguments.configFile().get(), configLoader)
                         : AnalyzerConfig.defaultConfig();
         List<AnalysisFinding> findings = analyzer.analyze(statements, config);
 
@@ -50,11 +46,5 @@ final class AnalyzingCommand implements Command {
                     finding.message());
         }
         return 1;
-    }
-
-    private AnalyzerConfig loadConfig(Path configFile) throws IOException {
-        try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-            return configLoader.load(reader, ConfigFiles.formatOf(configFile));
-        }
     }
 }
