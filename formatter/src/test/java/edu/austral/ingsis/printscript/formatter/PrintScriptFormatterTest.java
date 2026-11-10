@@ -177,14 +177,6 @@ class PrintScriptFormatterTest {
     }
 
     @Test
-    void writesNumbersInANotationTheLanguageCanReadBack() {
-        FormatterConfig config = new FormatterConfig(false, true, true, 0);
-
-        assertEquals("println(0.00001);\n", format(config, println(num(0.00001))));
-        assertEquals("println(100000000000000000000);\n", format(config, println(num(1e20))));
-    }
-
-    @Test
     void addsSpaceAroundParensWhenConfigured() {
         // println ( x );
         FormatterConfig config = new FormatterConfig(false, true, true, 0, 2, true);

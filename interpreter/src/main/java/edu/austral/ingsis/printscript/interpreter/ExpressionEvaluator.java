@@ -3,7 +3,6 @@ package edu.austral.ingsis.printscript.interpreter;
 import java.util.Optional;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
-import edu.austral.ingsis.printscript.common.NumberText;
 import edu.austral.ingsis.printscript.common.SemanticException;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
@@ -104,6 +103,12 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
     }
 
     static String stringify(Object value) {
-        return value instanceof Double number ? NumberText.of(number) : String.valueOf(value);
+        if (value instanceof Double number) {
+            if (number == Math.floor(number) && !Double.isInfinite(number)) {
+                return String.valueOf(number.longValue());
+            }
+            return String.valueOf(number);
+        }
+        return String.valueOf(value);
     }
 }
