@@ -1,7 +1,11 @@
 package edu.austral.ingsis.printscript.formatter;
 
+import java.util.Map;
+
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.ast.BinaryExpression;
 import edu.austral.ingsis.printscript.common.ast.BooleanLiteralExpression;
+import edu.austral.ingsis.printscript.common.ast.Expression;
 import edu.austral.ingsis.printscript.common.ast.ExpressionVisitor;
 import edu.austral.ingsis.printscript.common.ast.IdentifierExpression;
 import edu.austral.ingsis.printscript.common.ast.NumberLiteralExpression;
@@ -9,8 +13,20 @@ import edu.austral.ingsis.printscript.common.ast.ReadEnvExpression;
 import edu.austral.ingsis.printscript.common.ast.ReadInputExpression;
 import edu.austral.ingsis.printscript.common.ast.StringLiteralExpression;
 
-/** Renders an expression to text. Operators always get one space on each side. */
+/**
+ * Renders an expression to text. Operators always get one space on each side.
+ *
+ * <p>The AST doesn't keep the source's parentheses, so they're put back only where precedence needs
+ * them for the output to parse into the same tree again — every operator is left-associative, so a
+ * right operand at the same level as its parent keeps them too ({@code a - (b - c)}).
+ */
 final class ExpressionFormatter implements ExpressionVisitor<String> {
+
+    private final Map<OperatorDefinition, Integer> precedenceLevels;
+
+    ExpressionFormatter(Map<OperatorDefinition, Integer> precedenceLevels) {
+        this.precedenceLevels = precedenceLevels;
+    }
 
     @Override
     public String visitNumberLiteral(NumberLiteralExpression expression) {
@@ -42,11 +58,30 @@ final class ExpressionFormatter implements ExpressionVisitor<String> {
 
     @Override
     public String visitBinary(BinaryExpression expression) {
-        return expression.left().accept(this)
+        OperatorDefinition operator = expression.operator();
+        return operand(expression.left(), operator, false)
                 + " "
-                + expression.operator().symbol()
+                + operator.symbol()
                 + " "
-                + expression.right().accept(this);
+                + operand(expression.right(), operator, true);
+    }
+
+    private String operand(Expression operand, OperatorDefinition parent, boolean isRightSide) {
+        String text = operand.accept(this);
+        return needsParentheses(operand, parent, isRightSide) ? "(" + text + ")" : text;
+    }
+
+    private boolean needsParentheses(
+            Expression operand, OperatorDefinition parent, boolean isRightSide) {
+        if (!(operand instanceof BinaryExpression child)) {
+            return false;
+        }
+        Integer parentLevel = precedenceLevels.get(parent);
+        Integer childLevel = precedenceLevels.get(child.operator());
+        if (parentLevel == null || childLevel == null) {
+            return true; // operator this formatter wasn't told about: parenthesize to be safe
+        }
+        return isRightSide ? childLevel <= parentLevel : childLevel < parentLevel;
     }
 
     @Override

@@ -1,7 +1,9 @@
 package edu.austral.ingsis.printscript.formatter;
 
 import java.util.List;
+import java.util.Map;
 
+import edu.austral.ingsis.printscript.common.OperatorDefinition;
 import edu.austral.ingsis.printscript.common.ast.AssignmentStatement;
 import edu.austral.ingsis.printscript.common.ast.IfStatement;
 import edu.austral.ingsis.printscript.common.ast.PrintlnStatement;
@@ -12,10 +14,11 @@ import edu.austral.ingsis.printscript.common.ast.VariableDeclarationStatement;
 final class StatementFormatter implements StatementVisitor<String> {
 
     private final FormatterConfig config;
-    private final ExpressionFormatter expressionFormatter = new ExpressionFormatter();
+    private final ExpressionFormatter expressionFormatter;
 
-    StatementFormatter(FormatterConfig config) {
+    StatementFormatter(FormatterConfig config, Map<OperatorDefinition, Integer> precedenceLevels) {
         this.config = config;
+        this.expressionFormatter = new ExpressionFormatter(precedenceLevels);
     }
 
     @Override

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.StringReader;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
@@ -332,6 +333,137 @@ class PrintScriptFormatterTest {
                 format(config, assign("x", new BinaryExpression(id("a"), modulo, id("b"), P, P)));
 
         assertEquals("x = a % b;\n", result);
+    }
+
+    private static Expression binary(Expression left, OperatorDefinition op, Expression right) {
+        return new BinaryExpression(left, op, right, P, P);
+    }
+
+    @Test
+    void keepsParenthesesAroundALowerPrecedenceLeftOperand() {
+        // x = (1 + 2) * 3;
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        assign(
+                                "x",
+                                binary(
+                                        binary(num(1), CoreOperators.PLUS, num(2)),
+                                        CoreOperators.MULTIPLY,
+                                        num(3))));
+
+        assertEquals("x = (1 + 2) * 3;\n", result);
+    }
+
+    @Test
+    void omitsParenthesesWherePrecedenceAlreadyGroupsTheOperands() {
+        // x = 1 + 2 * 3;
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        assign(
+                                "x",
+                                binary(
+                                        num(1),
+                                        CoreOperators.PLUS,
+                                        binary(num(2), CoreOperators.MULTIPLY, num(3)))));
+
+        assertEquals("x = 1 + 2 * 3;\n", result);
+    }
+
+    @Test
+    void omitsParenthesesForASameLevelLeftOperand() {
+        // x = a - b - c;  (parsed as (a - b) - c)
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        assign(
+                                "x",
+                                binary(
+                                        binary(id("a"), CoreOperators.MINUS, id("b")),
+                                        CoreOperators.MINUS,
+                                        id("c"))));
+
+        assertEquals("x = a - b - c;\n", result);
+    }
+
+    @Test
+    void keepsParenthesesForASameLevelRightOperand() {
+        // x = a - (b - c);
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        assign(
+                                "x",
+                                binary(
+                                        id("a"),
+                                        CoreOperators.MINUS,
+                                        binary(id("b"), CoreOperators.MINUS, id("c")))));
+
+        assertEquals("x = a - (b - c);\n", result);
+    }
+
+    @Test
+    void keepsParenthesesThatChangeAStringConcatenation() {
+        // println("a" + (1 + 2));  ->  "a3", not "a12"
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        println(
+                                binary(
+                                        str("a"),
+                                        CoreOperators.PLUS,
+                                        binary(num(1), CoreOperators.PLUS, num(2)))));
+
+        assertEquals("println(\"a\" + (1 + 2));\n", result);
+    }
+
+    @Test
+    void usesThePrecedenceOfAPluginOperatorItWasGiven() {
+        // x = (a + b) % c;  and  y = a + b % c;
+        OperatorDefinition modulo = stubModuloOperator();
+        PrintScriptFormatter pluginAwareFormatter = new PrintScriptFormatter(Set.of(modulo));
+
+        String result =
+                pluginAwareFormatter.format(
+                        List.of(
+                                        assign(
+                                                "x",
+                                                binary(
+                                                        binary(
+                                                                id("a"),
+                                                                CoreOperators.PLUS,
+                                                                id("b")),
+                                                        modulo,
+                                                        id("c"))),
+                                        assign(
+                                                "y",
+                                                binary(
+                                                        id("a"),
+                                                        CoreOperators.PLUS,
+                                                        binary(id("b"), modulo, id("c")))))
+                                .iterator(),
+                        FormatterConfig.defaultConfig());
+
+        assertEquals("x = (a + b) % c;\ny = a + b % c;\n", result);
+    }
+
+    @Test
+    void parenthesizesANestedOperatorItWasNotGiven() {
+        // x = a + (b % c);  - the formatter can't know where '%' binds, so it stays explicit
+        OperatorDefinition modulo = stubModuloOperator();
+
+        String result =
+                format(
+                        FormatterConfig.defaultConfig(),
+                        assign(
+                                "x",
+                                binary(
+                                        id("a"),
+                                        CoreOperators.PLUS,
+                                        binary(id("b"), modulo, id("c")))));
+
+        assertEquals("x = a + (b % c);\n", result);
     }
 
     private static OperatorDefinition stubModuloOperator() {

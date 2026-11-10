@@ -73,7 +73,9 @@ public final class Main {
                             new SystemEnvironmentReader());
             case FORMATTING ->
                     new FormattingCommand(
-                            pipeline, new PrintScriptFormatter(), new FormatterConfigLoader());
+                            pipeline,
+                            new PrintScriptFormatter(extensionOperators),
+                            new FormatterConfigLoader());
             case ANALYZING ->
                     new AnalyzingCommand(
                             pipeline, new PrintScriptAnalyzer(), new AnalyzerConfigLoader());
