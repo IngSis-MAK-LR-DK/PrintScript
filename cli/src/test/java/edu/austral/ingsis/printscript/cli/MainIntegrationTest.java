@@ -1,6 +1,7 @@
 package edu.austral.ingsis.printscript.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -84,6 +85,53 @@ class MainIntegrationTest {
         Main.main(new String[] {"formatting", source.toString()});
 
         assertTrue(output().contains("let x: number = 1;"));
+    }
+
+    @Test
+    void undeclaredVariableErrorCoversTheWholeIdentifier() throws IOException {
+        Path source = writeSource("println(yy);");
+
+        assertEquals(1, Main.run(new String[] {"validation", source.toString()}));
+
+        assertTrue(errorOutput().contains("at line 1, column 9 to line 1, column 11"));
+    }
+
+    @Test
+    void typeMismatchErrorPointsAtTheValue() throws IOException {
+        Path source = writeSource("let a: number = \"x\";");
+
+        assertEquals(1, Main.run(new String[] {"execution", source.toString()}));
+
+        assertTrue(errorOutput().contains("at line 1, column 17 to line 1, column 20"));
+    }
+
+    @Test
+    void namingViolationPointsAtTheIdentifier() throws IOException {
+        Path source = writeSource("let my_var: number = 1;");
+
+        assertEquals(1, Main.run(new String[] {"analyzing", source.toString()}));
+
+        assertTrue(output().contains("[1:5 - 1:11]"));
+    }
+
+    @Test
+    void validationAcceptsReadInputWithoutBlockingOnStdin() throws IOException {
+        Path source = writeSource("let n: string = readInput(\"name?\");\nprintln(n);");
+
+        int exitCode = Main.run(new String[] {"validation", source.toString(), "--version", "1.1"});
+
+        assertEquals(0, exitCode);
+        assertTrue(output().contains("OK"));
+    }
+
+    @Test
+    void validationReportsErrorsInsideTheBranchThatWouldNotRun() throws IOException {
+        Path source = writeSource("const c: boolean = false;\nif (c) {\n  println(noExiste);\n}\n");
+
+        int exitCode = Main.run(new String[] {"validation", source.toString(), "--version", "1.1"});
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput().contains("noExiste"));
     }
 
     @Test
@@ -233,6 +281,55 @@ class MainIntegrationTest {
 
         assertEquals(1, exitCode);
         assertTrue(errorOutput().contains("Could not read the source file"));
+    }
+
+    @Test
+    void reportsAnInvalidConfigValueAsAUsageErrorNamingTheConfigFile() throws IOException {
+        Path source = writeSource("println(1);");
+        Path config = tempDir.resolve("rules.yaml");
+        Files.writeString(config, "newLinesBeforePrintln: 5\n");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "formatting", source.toString(), "--config", config.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Invalid config file '" + config + "'"));
+        assertTrue(errorOutput().contains("newLinesBeforePrintln must be 0, 1 or 2"));
+        assertFalse(errorOutput().contains("Could not read the source file"));
+    }
+
+    @Test
+    void reportsAnUnknownConfigOptionAsAUsageError() throws IOException {
+        Path source = writeSource("let x: number = 1;");
+        Path config = tempDir.resolve("rules.json");
+        Files.writeString(config, "{ \"identifierCas\": \"SNAKE_CASE\" }");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "analyzing", source.toString(), "--config", config.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Unknown option 'identifierCas'"));
+    }
+
+    @Test
+    void reportsAMissingConfigFileAsAUsageError() throws IOException {
+        Path source = writeSource("println(1);");
+        Path missing = tempDir.resolve("missing.yaml");
+
+        int exitCode =
+                Main.run(
+                        new String[] {
+                            "formatting", source.toString(), "--config", missing.toString()
+                        });
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput().contains("Config file not found: " + missing));
     }
 
     @Test

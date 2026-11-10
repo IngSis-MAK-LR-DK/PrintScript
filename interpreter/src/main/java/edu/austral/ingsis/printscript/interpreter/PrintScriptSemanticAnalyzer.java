@@ -5,22 +5,17 @@ import java.util.Iterator;
 import edu.austral.ingsis.printscript.common.ast.Statement;
 
 /**
- * Checks a program's semantics by running it through a real {@link PrintScriptInterpreter} with its
- * {@code println} output discarded. PrintScript 1.0 has no loops or external input, so every
- * declaration and assignment is checked by simply evaluating it — there's no cheaper way to know a
- * program type-checks than to run it.
- *
- * <p>{@code readInput}/{@code readEnv} deliberately aren't backed by anything real here (see {@link
- * InputProvider#unsupported()}/{@link EnvironmentReader#unsupported()}) - validation shouldn't
- * block on real standard input or depend on which environment variables happen to be set wherever
- * it runs. A program that uses either surfaces a clear {@code SemanticException} instead.
+ * Checks a program's semantics by walking its AST, without running any of it. That's what lets it
+ * accept {@code readInput}/{@code readEnv} without blocking on real input, and check both branches
+ * of an {@code if} instead of only the one a run would take.
  */
 public final class PrintScriptSemanticAnalyzer implements SemanticAnalyzer {
 
-    private final Interpreter interpreter = new PrintScriptInterpreter();
-
     @Override
     public void analyze(Iterator<Statement> statements) {
-        interpreter.interpret(statements, ExecutionContext.withEmitter(line -> {}));
+        StatementTypeChecker checker = new StatementTypeChecker(new TypeScope());
+        while (statements.hasNext()) {
+            statements.next().accept(checker);
+        }
     }
 }

@@ -46,7 +46,7 @@ final class ExpressionEvaluator implements ExpressionVisitor<Object> {
 
     @Override
     public Object visitIdentifier(IdentifierExpression expression) {
-        return environment.read(expression.name(), expression.start());
+        return environment.read(expression.name(), expression.range());
     }
 
     @Override
