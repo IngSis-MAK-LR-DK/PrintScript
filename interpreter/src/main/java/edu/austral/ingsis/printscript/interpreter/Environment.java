@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import edu.austral.ingsis.printscript.common.Position;
 import edu.austral.ingsis.printscript.common.SemanticException;
+import edu.austral.ingsis.printscript.common.SourceRange;
 
 /**
  * Holds the variables declared so far: each one's type, its value once it's assigned, and whether
@@ -32,12 +32,17 @@ final class Environment {
         this.constants = constants;
     }
 
-    Environment declare(String name, String type, boolean isConstant, Position at) {
+    static boolean isKnownType(String type) {
+        return type.equals("number") || type.equals("string") || type.equals("boolean");
+    }
+
+    Environment declare(
+            String name, String type, boolean isConstant, SourceRange nameAt, SourceRange typeAt) {
         if (declaredTypes.containsKey(name)) {
-            throw new SemanticException("Variable '" + name + "' is already declared", at, at);
+            throw error("Variable '" + name + "' is already declared", nameAt);
         }
-        if (!type.equals("number") && !type.equals("string") && !type.equals("boolean")) {
-            throw new SemanticException("Unknown type '" + type + "'", at, at);
+        if (!isKnownType(type)) {
+            throw error("Unknown type '" + type + "'", typeAt);
         }
         Map<String, String> updatedTypes = new HashMap<>(declaredTypes);
         updatedTypes.put(name, type);
@@ -49,47 +54,46 @@ final class Environment {
         return new Environment(Map.copyOf(updatedTypes), values, Set.copyOf(updatedConstants));
     }
 
-    Environment assign(String name, Object value, Position at) {
+    Environment assign(String name, Object value, SourceRange nameAt, SourceRange valueAt) {
         String type = declaredTypes.get(name);
         if (type == null) {
-            throw new SemanticException("Variable '" + name + "' is not declared", at, at);
+            throw error("Variable '" + name + "' is not declared", nameAt);
         }
         if (constants.contains(name) && values.containsKey(name)) {
-            throw new SemanticException("Cannot reassign constant '" + name + "'", at, at);
+            throw error("Cannot reassign constant '" + name + "'", nameAt);
         }
-        requireMatchingType(name, type, value, at);
+        requireMatchingType(name, type, value, valueAt);
         Map<String, Object> updatedValues = new HashMap<>(values);
         updatedValues.put(name, value);
         return new Environment(declaredTypes, Map.copyOf(updatedValues), constants);
     }
 
-    String typeOf(String name, Position at) {
+    String typeOf(String name, SourceRange at) {
         String type = declaredTypes.get(name);
         if (type == null) {
-            throw new SemanticException("Variable '" + name + "' is not declared", at, at);
+            throw error("Variable '" + name + "' is not declared", at);
         }
         return type;
     }
 
-    Object read(String name, Position at) {
+    Object read(String name, SourceRange at) {
         if (!declaredTypes.containsKey(name)) {
-            throw new SemanticException("Variable '" + name + "' is not declared", at, at);
+            throw error("Variable '" + name + "' is not declared", at);
         }
         Object value = values.get(name);
         if (value == null) {
-            throw new SemanticException(
-                    "Variable '" + name + "' is used before being assigned", at, at);
+            throw error("Variable '" + name + "' is used before being assigned", at);
         }
         return value;
     }
 
-    private void requireMatchingType(String name, String type, Object value, Position at) {
+    private void requireMatchingType(String name, String type, Object value, SourceRange at) {
         boolean matches =
                 (type.equals("number") && value instanceof Double)
                         || (type.equals("string") && value instanceof String)
                         || (type.equals("boolean") && value instanceof Boolean);
         if (!matches) {
-            throw new SemanticException(
+            throw error(
                     "Cannot assign a value of type '"
                             + runtimeTypeName(value)
                             + "' to variable '"
@@ -97,9 +101,12 @@ final class Environment {
                             + "' of type '"
                             + type
                             + "'",
-                    at,
                     at);
         }
+    }
+
+    private static SemanticException error(String message, SourceRange at) {
+        return new SemanticException(message, at.start(), at.end());
     }
 
     private static String runtimeTypeName(Object value) {

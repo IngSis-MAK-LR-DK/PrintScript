@@ -46,19 +46,30 @@ final class StatementExecutor implements StatementVisitor<Environment> {
                         statement.identifierName(),
                         statement.typeName(),
                         statement.isConstant(),
-                        statement.start());
+                        statement.identifierRange(),
+                        statement.typeRange());
         return statement
                 .initializer()
-                .map(initializer -> evaluateForAssignment(initializer, statement.typeName()))
-                .map(value -> declared.assign(statement.identifierName(), value, statement.start()))
+                .map(
+                        initializer ->
+                                declared.assign(
+                                        statement.identifierName(),
+                                        evaluateForAssignment(initializer, statement.typeName()),
+                                        statement.identifierRange(),
+                                        initializer.range()))
                 .orElse(declared);
     }
 
     @Override
     public Environment visitAssignment(AssignmentStatement statement) {
-        String declaredType = environment.typeOf(statement.identifierName(), statement.start());
+        String declaredType =
+                environment.typeOf(statement.identifierName(), statement.identifierRange());
         Object value = evaluateForAssignment(statement.value(), declaredType);
-        return environment.assign(statement.identifierName(), value, statement.start());
+        return environment.assign(
+                statement.identifierName(),
+                value,
+                statement.identifierRange(),
+                statement.value().range());
     }
 
     @Override
@@ -71,7 +82,7 @@ final class StatementExecutor implements StatementVisitor<Environment> {
     @Override
     public Environment visitIf(IfStatement statement) {
         Object conditionValue =
-                environment.read(statement.condition().name(), statement.condition().start());
+                environment.read(statement.condition().name(), statement.condition().range());
         if (!(conditionValue instanceof Boolean isTrue)) {
             throw new SemanticException(
                     "'if' condition must be a 'boolean' variable, but '"

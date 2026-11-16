@@ -1,0 +1,60 @@
+@startuml PrintScript-Componentes
+title PrintScript - Diagrama de componentes
+
+skinparam componentStyle uml2
+
+package "Aplicacion" {
+  [cli] as CLI
+}
+
+package "Herramientas" {
+  [interpreter] as INTERPRETER
+  [formatter] as FORMATTER
+  [analyzer] as ANALYZER
+}
+
+package "Analisis del lenguaje" {
+  [lexer] as LEXER
+  [parser] as PARSER
+}
+
+package "Base" {
+  [ast] as AST
+  [common] as COMMON
+  [config] as CONFIG
+  interface "OperatorDefinition" as OPERATORS
+}
+
+package "Extensiones" {
+  [plugins:modulo-operator] as MODULO
+}
+
+CLI --> LEXER
+CLI --> PARSER
+CLI --> INTERPRETER
+CLI --> FORMATTER
+CLI --> ANALYZER
+CLI --> CONFIG
+
+INTERPRETER --> AST
+FORMATTER --> AST
+FORMATTER --> CONFIG
+ANALYZER --> AST
+ANALYZER --> CONFIG
+
+PARSER --> AST
+PARSER --> COMMON
+LEXER --> COMMON
+AST --> COMMON
+
+COMMON -- OPERATORS
+MODULO ..|> OPERATORS : implementa
+CLI ..> OPERATORS : descubre con ServiceLoader
+CLI ..> MODULO : solo en runtime
+
+note bottom of COMMON
+  El lexer y el parser se conectan por TokenStream,
+  definido en common: el parser no depende del lexer.
+end note
+
+@enduml

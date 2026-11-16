@@ -1,12 +1,8 @@
 package edu.austral.ingsis.printscript.cli;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.austral.ingsis.printscript.analyzer.AnalysisFinding;
 import edu.austral.ingsis.printscript.analyzer.Analyzer;
@@ -32,29 +28,32 @@ final class AnalyzingCommand implements Command {
         Iterator<Statement> statements = pipeline.parse(arguments.sourceFile());
         AnalyzerConfig config =
                 arguments.configFile().isPresent()
-                        ? loadConfig(arguments.configFile().get())
+                        ? ConfigFiles.load(arguments.configFile().get(), configLoader)
                         : AnalyzerConfig.defaultConfig();
-        List<AnalysisFinding> findings = analyzer.analyze(statements, config);
 
-        if (findings.isEmpty()) {
-            System.out.println("OK: no rule violations found");
-            return 0;
+        AtomicBoolean foundViolations = new AtomicBoolean(false);
+        analyzer.analyze(
+                statements,
+                config,
+                finding -> {
+                    foundViolations.set(true);
+                    print(finding);
+                });
+
+        if (foundViolations.get()) {
+            return 1;
         }
-        for (AnalysisFinding finding : findings) {
-            System.out.printf(
-                    "[%d:%d - %d:%d] %s%n",
-                    finding.start().line(),
-                    finding.start().column(),
-                    finding.end().line(),
-                    finding.end().column(),
-                    finding.message());
-        }
-        return 1;
+        System.out.println("OK: no rule violations found");
+        return 0;
     }
 
-    private AnalyzerConfig loadConfig(Path configFile) throws IOException {
-        try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
-            return configLoader.load(reader, ConfigFiles.formatOf(configFile));
-        }
+    private static void print(AnalysisFinding finding) {
+        System.out.printf(
+                "[%d:%d - %d:%d] %s%n",
+                finding.start().line(),
+                finding.start().column(),
+                finding.end().line(),
+                finding.end().column(),
+                finding.message());
     }
 }

@@ -9,7 +9,7 @@ package edu.austral.ingsis.printscript.formatter;
  * @param newLinesBeforePrintln extra line breaks (0, 1 or 2) inserted between two
  *     <em>consecutive</em> {@code println} calls at the top level of the program - a {@code
  *     println} that follows a non-{@code println} statement, or the first statement of the file,
- *     never gets one
+ *     never gets one. The TCK's {@code line-breaks-after-println} cases require exactly this
  * @param indentSize how many spaces to indent the content of an {@code if}/{@code else} block
  *     relative to the line that opens it
  * @param spaceAroundParens space right inside the parentheses of a {@code println} call, e.g.

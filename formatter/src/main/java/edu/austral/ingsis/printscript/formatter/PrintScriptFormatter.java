@@ -3,6 +3,7 @@ package edu.austral.ingsis.printscript.formatter;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import edu.austral.ingsis.printscript.common.CoreOperators;
 import edu.austral.ingsis.printscript.common.OperatorDefinition;
@@ -26,20 +27,18 @@ public final class PrintScriptFormatter implements Formatter {
     }
 
     @Override
-    public String format(Iterator<Statement> statements, FormatterConfig config) {
+    public void format(
+            Iterator<Statement> statements, FormatterConfig config, Consumer<String> output) {
         StatementFormatter statementFormatter = new StatementFormatter(config, precedenceLevels);
-        StringBuilder output = new StringBuilder();
         Statement previous = null;
 
         while (statements.hasNext()) {
             Statement statement = statements.next();
             if (previous instanceof PrintlnStatement && statement instanceof PrintlnStatement) {
-                output.append("\n".repeat(config.newLinesBeforePrintln()));
+                output.accept("\n".repeat(config.newLinesBeforePrintln()));
             }
-            output.append(statement.accept(statementFormatter)).append('\n');
+            output.accept(statement.accept(statementFormatter) + "\n");
             previous = statement;
         }
-
-        return output.toString();
     }
 }
